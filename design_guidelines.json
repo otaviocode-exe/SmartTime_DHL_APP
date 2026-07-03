@@ -1,0 +1,105 @@
+{
+  "theme": "Light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "design_concept": {
+    "philosophy": "Corporate precision meets high usability. The DHL Overtime Approval System is designed for quick decision-making and clear data visualization. It strictly uses DHL's brand colors (Yellow and Red) with a clean, high-contrast, professional structure.",
+    "emotional_tone": "Authoritative, efficient, clear, and professional."
+  },
+  "typography": {
+    "primary_font": "Outfit",
+    "secondary_font": "IBM Plex Sans",
+    "rules": {
+      "headings": "font-outfit tracking-tight text-slate-900 font-bold",
+      "body": "font-ibm-plex-sans leading-relaxed text-slate-700",
+      "labels": "uppercase tracking-[0.1em] text-xs font-bold text-slate-500",
+      "h1": "text-3xl md:text-4xl lg:text-5xl",
+      "h2": "text-2xl md:text-3xl",
+      "h3": "text-xl md:text-2xl",
+      "h4": "text-lg md:text-xl"
+    }
+  },
+  "colors": {
+    "brand_yellow": "#FFCC00",
+    "brand_red": "#D40511",
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "text_primary": "#0F172A",
+    "text_secondary": "#475569",
+    "border": "#E2E8F0",
+    "status": {
+      "pending": {
+        "bg": "#FEF9C3",
+        "text": "#A16207",
+        "border": "#FDE047"
+      },
+      "approved": {
+        "bg": "#DCFCE7",
+        "text": "#15803D",
+        "border": "#86EFAC"
+      },
+      "rejected": {
+        "bg": "#FEE2E2",
+        "text": "#B91C1C",
+        "border": "#FCA5A5"
+      }
+    }
+  },
+  "spacing_and_layout": {
+    "container_padding": "p-6 md:p-8 lg:p-12",
+    "gap": "gap-6",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
+    "card_padding": "p-6"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#D40511] text-white hover:bg-[#B9040F] font-semibold rounded-md px-6 py-2 transition-colors",
+      "secondary": "bg-[#FFCC00] text-slate-900 hover:bg-[#E5B800] font-semibold rounded-md px-6 py-2 transition-colors",
+      "outline": "border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-md px-6 py-2 transition-colors"
+    },
+    "cards": "bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow",
+    "inputs": "w-full border border-slate-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-[#FFCC00] focus:border-[#FFCC00] outline-none text-slate-900 bg-white",
+    "sidebar": "w-64 bg-slate-900 text-white min-h-screen border-r border-slate-800"
+  },
+  "visual_enhancers": {
+    "borders": "1px solid crisp borders for structure",
+    "shadows": "Minimal ambient shadows, mostly flat design",
+    "radius": "rounded-lg for main containers, rounded-md for buttons/inputs"
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/15218464/pexels-photo-15218464.jpeg",
+        "category": "login_background",
+        "description": "Yellow DHL van, used as a subtle background or side image on the login screen."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1607124010107-a2eafce10eea",
+        "category": "brand_logo_placeholder",
+        "description": "DHL logo reference (abstract yellow/black) to be used as a logo placeholder in the sidebar or header."
+      },
+      {
+        "url": "https://images.pexels.com/photos/8463151/pexels-photo-8463151.jpeg",
+        "category": "dashboard_hero_illustration",
+        "description": "Corporate office people meeting, can be used in the welcome banner of the dashboard."
+      }
+    ]
+  },
+  "icons": {
+    "library": "lucide-react",
+    "instructions": "Use lucide-react for all icons. Standardize stroke-width to 2."
+  },
+  "accessibility": {
+    "contrast": "Ensure white text on DHL Red (#D40511) and dark slate text on DHL Yellow (#FFCC00) for strict WCAG AA compliance.",
+    "testing": "All interactive elements MUST have data-testid attributes formatted in kebab-case."
+  },
+  "instructions_to_main_agent": [
+    "Use light theme as default. Use #F8FAFC as the main app background and white for cards/surfaces.",
+    "Use DHL Yellow (#FFCC00) for active states, highlights, or secondary buttons (with dark text).",
+    "Use DHL Red (#D40511) for primary actions, warnings, and the reject button.",
+    "Implement a persistent sidebar for navigation (Manager vs. Gerencia views).",
+    "The dashboard should use a dense bento grid (Control Room grid) for metric cards.",
+    "Tables should be clean, using Shadcn Table components with clear status badges.",
+    "Add 'data-testid' to all buttons, inputs, and major links.",
+    "Use 'Outfit' for headings and 'IBM Plex Sans' for body text."
+  ]
+}
