@@ -116,7 +116,7 @@ export function RequestDetailDialog({ request, onClose }) {
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <Info label="Matrícula" value={request.matricula} />
-              <Info label="Centro de custo" value={request.centro_custo || "—"} />
+              <Info label="Turno" value={request.turno || "—"} />
               <Info label="Setor" value={request.setor || "—"} />
               <Info label="Data" value={request.data} />
               <Info label="Horário" value={`${request.hora_inicial} — ${request.hora_final}`} />

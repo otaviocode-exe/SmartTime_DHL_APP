@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Save, ArrowLeft } from "lucide-react";
 
@@ -23,7 +26,7 @@ export default function NovaSolicitacao() {
   const [form, setForm] = useState({
     colaborador: "",
     matricula: "",
-    centro_custo: "",
+    turno: "ADM",
     setor: "",
     data: new Date().toISOString().slice(0, 10),
     hora_inicial: "18:00",
@@ -85,8 +88,18 @@ export default function NovaSolicitacao() {
               <Field label="Matrícula" required>
                 <Input required data-testid="input-matricula" value={form.matricula} onChange={set("matricula")} placeholder="Ex.: 12345" />
               </Field>
-              <Field label="Centro de Custo">
-                <Input data-testid="input-centro-custo" value={form.centro_custo} onChange={set("centro_custo")} placeholder="Ex.: CC-001" />
+              <Field label="Turno" required>
+                <Select value={form.turno} onValueChange={(v) => setForm({ ...form, turno: v })}>
+                  <SelectTrigger data-testid="input-turno" className="mt-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="T1">T1 — 1º Turno</SelectItem>
+                    <SelectItem value="T2">T2 — 2º Turno</SelectItem>
+                    <SelectItem value="T3">T3 — 3º Turno</SelectItem>
+                    <SelectItem value="ADM">ADM — Administrativo</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
               <Field label="Setor">
                 <Input data-testid="input-setor" value={form.setor} onChange={set("setor")} placeholder="Ex.: Operações" />

@@ -13,9 +13,13 @@ from typing import Optional, List, Literal
 import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
 
 # ---------------- Config ----------------
 JWT_ALGORITHM = "HS256"
@@ -130,7 +134,7 @@ class UserCreateIn(BaseModel):
 class RequestCreateIn(BaseModel):
     colaborador: str = Field(min_length=2)
     matricula: str = Field(min_length=1)
-    centro_custo: str = ""
+    turno: Literal["T1", "T2", "T3", "ADM"] = "ADM"
     setor: str = ""
     data: str  # YYYY-MM-DD
     hora_inicial: str  # HH:MM
@@ -278,6 +282,74 @@ async def approve(req_id: str, body: DecisionIn, user: dict = Depends(require_ro
 @api.post("/requests/{req_id}/reject")
 async def reject(req_id: str, body: DecisionIn, user: dict = Depends(require_role("gerencia", "admin"))):
     return await _decide(req_id, "Rejeitada", body.observacoes_gerencia, user)
+
+# ---------------- Excel Export ----------------
+@api.get("/reports/requests.xlsx")
+async def export_requests(status: Optional[str] = None,
+                          _u: dict = Depends(require_role("gerencia", "admin"))):
+    q = {}
+    if status and status != "all":
+        q["status"] = status
+    docs = await db.requests.find(q, {"_id": 0}).sort("created_at", -1).to_list(5000)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Horas Extras"
+
+    headers = [
+        "Número", "Colaborador", "Matrícula", "Turno", "Setor",
+        "Data", "Hora Inicial", "Hora Final", "Total (h)",
+        "Motivo", "Observações do Gestor",
+        "Status", "Gestor", "Gerente",
+        "Observações da Gerência", "Data da Decisão", "Criado em",
+    ]
+    ws.append(headers)
+
+    header_fill = PatternFill("solid", fgColor="FFCC00")
+    header_font = Font(bold=True, color="0F172A")
+    for col_idx, _ in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for d in docs:
+        ws.append([
+            d.get("numero", ""),
+            d.get("colaborador", ""),
+            d.get("matricula", ""),
+            d.get("turno") or d.get("centro_custo", ""),
+            d.get("setor", ""),
+            d.get("data", ""),
+            d.get("hora_inicial", ""),
+            d.get("hora_final", ""),
+            d.get("total_horas", 0),
+            d.get("motivo", ""),
+            d.get("observacoes", ""),
+            d.get("status", ""),
+            d.get("gestor_nome", ""),
+            d.get("gerente_nome", "") or "",
+            d.get("observacoes_gerencia", ""),
+            d.get("data_aprovacao", "") or "",
+            d.get("created_at", ""),
+        ])
+
+    widths = [22, 26, 12, 8, 18, 12, 12, 12, 10, 40, 30, 12, 22, 22, 30, 22, 22]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+
+    ws.freeze_panes = "A2"
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
+    filename = f"horas_extras_{ts}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 # ---------------- Health ----------------
 @api.get("/")

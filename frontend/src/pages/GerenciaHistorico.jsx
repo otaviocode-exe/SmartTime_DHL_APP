@@ -3,11 +3,14 @@ import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { API } from "@/lib/api";
 import { RequestDetailDialog } from "@/pages/MinhasSolicitacoes";
 
 export default function GerenciaHistorico() {
@@ -15,6 +18,32 @@ export default function GerenciaHistorico() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      const url = `${API}/reports/requests.xlsx${params.toString() ? `?${params}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Falha ao exportar");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      const ts = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+      link.download = `horas_extras_${ts}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+      toast.success("Relatório Excel gerado com sucesso");
+    } catch (e) {
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     api.get("/requests").then((r) => setItems(r.data)).catch(() => {});
@@ -33,10 +62,21 @@ export default function GerenciaHistorico() {
 
   return (
     <div className="space-y-6 fade-in-up">
-      <div>
-        <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">Registro</div>
-        <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">Histórico de Solicitações</h1>
-        <p className="text-slate-500 mt-1">Todas as solicitações registradas no sistema.</p>
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">Registro</div>
+          <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">Histórico de Solicitações</h1>
+          <p className="text-slate-500 mt-1">Todas as solicitações registradas no sistema.</p>
+        </div>
+        <Button
+          onClick={exportExcel}
+          disabled={exporting}
+          data-testid="export-excel-btn"
+          className="btn-accent rounded-md font-semibold"
+        >
+          <Download size={18} className="mr-2" />
+          {exporting ? "Gerando..." : "Exportar Excel"}
+        </Button>
       </div>
 
       <Card className="border-slate-200 shadow-sm">

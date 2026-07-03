@@ -68,7 +68,7 @@ export default function Aprovacoes() {
                   <div className="min-w-0">
                     <div className="font-mono text-[10px] text-slate-500">{r.numero}</div>
                     <div className="font-heading text-xl font-bold text-slate-900 mt-1">{r.colaborador}</div>
-                    <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Setor: {r.setor || "—"}</div>
+                    <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Turno: {r.turno || "—"} · Setor: {r.setor || "—"}</div>
                   </div>
                   <StatusBadge status={r.status} />
                 </div>
@@ -121,7 +121,7 @@ export default function Aprovacoes() {
                 <Info label="Colaborador" value={selected.colaborador} />
                 <Info label="Matrícula" value={selected.matricula} />
                 <Info label="Setor" value={selected.setor || "—"} />
-                <Info label="Centro de Custo" value={selected.centro_custo || "—"} />
+                <Info label="Turno" value={selected.turno || "—"} />
                 <Info label="Data" value={selected.data} />
                 <Info label="Horário" value={`${selected.hora_inicial} — ${selected.hora_final}`} />
                 <Info label="Total de Horas" value={`${selected.total_horas}h`} />
