@@ -55,8 +55,7 @@ export default function Login() {
           </div>
           <div>
             <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.05]">
-              Aprovação de<br/>Horas Extras<br/>
-              <span className="text-[#D40511]">simplificada.</span>
+              Aprovação de<br/>Horas <span className="text-[#D40511]">Extras.</span>
             </h1>
             <p className="mt-6 text-slate-800 text-lg max-w-md">
               Centralize solicitações, aprove com transparência e mantenha
