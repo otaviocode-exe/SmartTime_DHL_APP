@@ -380,11 +380,11 @@ async def export_requests(status: Optional[str] = None,
 
 # ---------------- Settings & Cleanup ----------------
 @api.get("/settings")
-async def get_settings(_u: dict = Depends(require_role("gerencia", "admin"))):
+async def get_settings(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     return await _get_settings()
 
 @api.put("/settings")
-async def update_settings(body: SettingsIn, _u: dict = Depends(require_role("gerencia", "admin"))):
+async def update_settings(body: SettingsIn, _u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     await db.settings.update_one(
         {"id": "main"},
         {"$set": {"retention_policy": body.retention_policy}},
@@ -393,13 +393,13 @@ async def update_settings(body: SettingsIn, _u: dict = Depends(require_role("ger
     return await _get_settings()
 
 @api.get("/requests/cleanup/preview")
-async def cleanup_preview(_u: dict = Depends(require_role("gerencia", "admin"))):
+async def cleanup_preview(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
     count = await db.requests.count_documents({"created_at": {"$lt": cutoff}})
     return {"eligible": count, "cutoff": cutoff, "retention_days": RETENTION_DAYS}
 
 @api.post("/requests/cleanup")
-async def cleanup_now(_u: dict = Depends(require_role("gerencia", "admin"))):
+async def cleanup_now(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     deleted = await _run_cleanup()
     return {"deleted": deleted}
 

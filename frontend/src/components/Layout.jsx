@@ -16,6 +16,7 @@ const gestorNav = [
   { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", end: true, testid: "nav-gestor-dashboard" },
   { to: "/gestor/nova", icon: FilePlus2, label: "Nova Solicitação", testid: "nav-nova-solicitacao" },
   { to: "/gestor/minhas", icon: ListTodo, label: "Minhas Solicitações", testid: "nav-minhas-solicitacoes" },
+  { to: "/gestor/configuracoes", icon: Settings, label: "Configurações", testid: "nav-configuracoes-gestor" },
 ];
 
 const gerenciaNav = [
