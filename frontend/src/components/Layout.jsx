@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Users,
   History,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ const gerenciaNav = [
   { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", testid: "nav-aprovacoes" },
   { to: "/gerencia/historico", icon: History, label: "Histórico", testid: "nav-historico" },
   { to: "/gerencia/usuarios", icon: Users, label: "Usuários", testid: "nav-usuarios" },
+  { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", testid: "nav-configuracoes" },
 ];
 
 export default function Layout() {

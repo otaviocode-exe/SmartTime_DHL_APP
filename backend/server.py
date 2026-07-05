@@ -146,6 +146,29 @@ class RequestCreateIn(BaseModel):
 class DecisionIn(BaseModel):
     observacoes_gerencia: str = ""
 
+class SettingsIn(BaseModel):
+    retention_policy: Literal["never", "auto", "manual"] = "never"
+
+RETENTION_DAYS = 30
+
+async def _get_settings() -> dict:
+    doc = await db.settings.find_one({"id": "main"})
+    if not doc:
+        doc = {"id": "main", "retention_policy": "never", "last_cleanup": None}
+        await db.settings.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+async def _run_cleanup() -> int:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
+    res = await db.requests.delete_many({"created_at": {"$lt": cutoff}})
+    await db.settings.update_one(
+        {"id": "main"},
+        {"$set": {"last_cleanup": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return res.deleted_count
+
 # ---------------- Auth Endpoints ----------------
 @api.post("/auth/login")
 async def login(body: LoginIn, response: Response):
@@ -222,6 +245,10 @@ async def my_requests(user: dict = Depends(require_role("gestor", "admin"))):
 @api.get("/requests")
 async def all_requests(status: Optional[str] = None,
                        _u: dict = Depends(require_role("gerencia", "admin"))):
+    # Auto retention: if policy is "auto", purge records older than RETENTION_DAYS on read
+    settings = await _get_settings()
+    if settings.get("retention_policy") == "auto":
+        await _run_cleanup()
     q = {}
     if status:
         q["status"] = status
@@ -350,6 +377,31 @@ async def export_requests(status: Optional[str] = None,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+# ---------------- Settings & Cleanup ----------------
+@api.get("/settings")
+async def get_settings(_u: dict = Depends(require_role("gerencia", "admin"))):
+    return await _get_settings()
+
+@api.put("/settings")
+async def update_settings(body: SettingsIn, _u: dict = Depends(require_role("gerencia", "admin"))):
+    await db.settings.update_one(
+        {"id": "main"},
+        {"$set": {"retention_policy": body.retention_policy}},
+        upsert=True,
+    )
+    return await _get_settings()
+
+@api.get("/requests/cleanup/preview")
+async def cleanup_preview(_u: dict = Depends(require_role("gerencia", "admin"))):
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
+    count = await db.requests.count_documents({"created_at": {"$lt": cutoff}})
+    return {"eligible": count, "cutoff": cutoff, "retention_days": RETENTION_DAYS}
+
+@api.post("/requests/cleanup")
+async def cleanup_now(_u: dict = Depends(require_role("gerencia", "admin"))):
+    deleted = await _run_cleanup()
+    return {"deleted": deleted}
 
 # ---------------- Health ----------------
 @api.get("/")
