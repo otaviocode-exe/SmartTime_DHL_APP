@@ -159,6 +159,19 @@ async def _get_settings() -> dict:
     doc.pop("_id", None)
     return doc
 
+async def _audit(user: dict, action: str, target_type: str, target_id: str = "", details: str = ""):
+    await db.audit_log.insert_one({
+        "id": str(uuid.uuid4()),
+        "at": datetime.now(timezone.utc).isoformat(),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "user_role": user["role"],
+        "action": action,
+        "target_type": target_type,
+        "target_id": target_id,
+        "details": details,
+    })
+
 async def _run_cleanup() -> int:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
     res = await db.requests.delete_many({"created_at": {"$lt": cutoff}})
@@ -300,6 +313,24 @@ async def _decide(req_id: str, status: str, observ: str, user: dict) -> dict:
     }
     await db.requests.update_one({"id": req_id}, {"$set": update})
     doc.update(update)
+    await _audit(user, f"{status.upper()}_REQUEST", "request", req_id, f"{doc.get('colaborador')} · {doc.get('data')} · {doc.get('total_horas')}h")
+    return _serialize_request(doc)
+
+@api.post("/requests/{req_id}/cancel")
+async def cancel_request(req_id: str, user: dict = Depends(require_role("gestor", "admin"))):
+    doc = await db.requests.find_one({"id": req_id})
+    if not doc:
+        raise HTTPException(404, "Solicitação não encontrada")
+    if doc["gestor_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(403, "Você só pode cancelar suas próprias solicitações")
+    if doc["status"] != "Pendente":
+        raise HTTPException(400, "Somente solicitações pendentes podem ser canceladas")
+    await db.requests.update_one({"id": req_id}, {"$set": {
+        "status": "Cancelada",
+        "data_aprovacao": datetime.now(timezone.utc).isoformat(),
+    }})
+    await _audit(user, "CANCEL_REQUEST", "request", req_id, doc.get("colaborador", ""))
+    doc["status"] = "Cancelada"
     return _serialize_request(doc)
 
 @api.post("/requests/{req_id}/approve")
@@ -384,12 +415,13 @@ async def get_settings(_u: dict = Depends(require_role("gestor", "gerencia", "ad
     return await _get_settings()
 
 @api.put("/settings")
-async def update_settings(body: SettingsIn, _u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
+async def update_settings(body: SettingsIn, user: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     await db.settings.update_one(
         {"id": "main"},
         {"$set": {"retention_policy": body.retention_policy}},
         upsert=True,
     )
+    await _audit(user, "UPDATE_SETTINGS", "settings", "main", f"retention_policy={body.retention_policy}")
     return await _get_settings()
 
 @api.get("/requests/cleanup/preview")
@@ -399,19 +431,26 @@ async def cleanup_preview(_u: dict = Depends(require_role("gestor", "gerencia", 
     return {"eligible": count, "cutoff": cutoff, "retention_days": RETENTION_DAYS}
 
 @api.post("/requests/cleanup")
-async def cleanup_now(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
+async def cleanup_now(user: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     deleted = await _run_cleanup()
+    await _audit(user, "CLEANUP_OLD", "requests", "", f"deleted={deleted}")
     return {"deleted": deleted}
 
 @api.post("/requests/cleanup/all")
-async def cleanup_all(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
+async def cleanup_all(user: dict = Depends(require_role("gestor", "gerencia", "admin"))):
     res = await db.requests.delete_many({})
     await db.settings.update_one(
         {"id": "main"},
         {"$set": {"last_cleanup": datetime.now(timezone.utc).isoformat()}},
         upsert=True,
     )
+    await _audit(user, "PURGE_ALL", "requests", "", f"deleted={res.deleted_count}")
     return {"deleted": res.deleted_count}
+
+@api.get("/audit-log")
+async def get_audit_log(_u: dict = Depends(require_role("gerencia", "admin"))):
+    docs = await db.audit_log.find({}, {"_id": 0}).sort("at", -1).to_list(500)
+    return docs
 
 # ---------------- Health ----------------
 @api.get("/")

@@ -17,6 +17,8 @@ export default function GerenciaHistorico() {
   const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [turnoFilter, setTurnoFilter] = useState("all");
+  const [gestorFilter, setGestorFilter] = useState("all");
   const [selected, setSelected] = useState(null);
   const [exporting, setExporting] = useState(false);
 
@@ -53,11 +55,18 @@ export default function GerenciaHistorico() {
     () =>
       items.filter((r) => {
         const okStatus = statusFilter === "all" || r.status === statusFilter;
+        const okTurno = turnoFilter === "all" || r.turno === turnoFilter;
+        const okGestor = gestorFilter === "all" || r.gestor_nome === gestorFilter;
         const okText = [r.numero, r.colaborador, r.matricula, r.gestor_nome]
           .join(" ").toLowerCase().includes(q.toLowerCase());
-        return okStatus && okText;
+        return okStatus && okTurno && okGestor && okText;
       }),
-    [items, q, statusFilter]
+    [items, q, statusFilter, turnoFilter, gestorFilter]
+  );
+
+  const gestores = useMemo(
+    () => Array.from(new Set(items.map((r) => r.gestor_nome).filter(Boolean))),
+    [items]
   );
 
   return (
@@ -93,7 +102,7 @@ export default function GerenciaHistorico() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48" data-testid="history-status-filter">
+              <SelectTrigger className="w-full md:w-40" data-testid="history-status-filter">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -101,6 +110,30 @@ export default function GerenciaHistorico() {
                 <SelectItem value="Pendente">Pendente</SelectItem>
                 <SelectItem value="Aprovada">Aprovada</SelectItem>
                 <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                <SelectItem value="Cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={turnoFilter} onValueChange={setTurnoFilter}>
+              <SelectTrigger className="w-full md:w-36" data-testid="history-turno-filter">
+                <SelectValue placeholder="Turno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Turnos</SelectItem>
+                <SelectItem value="T1">T1</SelectItem>
+                <SelectItem value="T2">T2</SelectItem>
+                <SelectItem value="T3">T3</SelectItem>
+                <SelectItem value="ADM">ADM</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={gestorFilter} onValueChange={setGestorFilter}>
+              <SelectTrigger className="w-full md:w-48" data-testid="history-gestor-filter">
+                <SelectValue placeholder="Gestor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Gestores</SelectItem>
+                {gestores.map((g) => (
+                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

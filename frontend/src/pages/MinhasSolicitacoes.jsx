@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import api, { formatApiErrorDetail } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { FilePlus2, Search } from "lucide-react";
+import { FilePlus2, Search, Ban } from "lucide-react";
+import { toast } from "sonner";
 import StatusBadge from "@/components/StatusBadge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -16,9 +17,20 @@ export default function MinhasSolicitacoes() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(null);
 
-  useEffect(() => {
-    api.get("/requests/mine").then((r) => setItems(r.data)).catch(() => {});
-  }, []);
+  const load = () => api.get("/requests/mine").then((r) => setItems(r.data)).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const cancelRequest = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Deseja realmente cancelar esta solicitação?")) return;
+    try {
+      await api.post(`/requests/${id}/cancel`);
+      toast.success("Solicitação cancelada");
+      load();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro");
+    }
+  };
 
   const filtered = items.filter((r) =>
     [r.numero, r.colaborador, r.matricula, r.status]
@@ -64,12 +76,13 @@ export default function MinhasSolicitacoes() {
                   <TableHead>Horas</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Gerente</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-slate-500">
+                    <TableCell colSpan={8} className="text-center py-10 text-slate-500">
                       Nenhuma solicitação encontrada.
                     </TableCell>
                   </TableRow>
@@ -88,6 +101,19 @@ export default function MinhasSolicitacoes() {
                     <TableCell>{r.total_horas}h</TableCell>
                     <TableCell><StatusBadge status={r.status} /></TableCell>
                     <TableCell className="text-slate-600">{r.gerente_nome || "—"}</TableCell>
+                    <TableCell className="text-right">
+                      {r.status === "Pendente" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => cancelRequest(r.id, e)}
+                          data-testid={`cancel-btn-${r.id}`}
+                          className="text-[#D40511] hover:bg-[#FEE2E2] hover:text-[#B91C1C] h-8"
+                        >
+                          <Ban size={14} className="mr-1" /> Cancelar
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

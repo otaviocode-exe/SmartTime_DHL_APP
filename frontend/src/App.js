@@ -12,6 +12,7 @@ import Aprovacoes from "@/pages/Aprovacoes";
 import GerenciaHistorico from "@/pages/GerenciaHistorico";
 import Usuarios from "@/pages/Usuarios";
 import Configuracoes from "@/pages/Configuracoes";
+import AuditLog from "@/pages/AuditLog";
 import { Toaster } from "@/components/ui/sonner";
 
 function HomeRedirect() {
@@ -56,6 +57,7 @@ function App() {
               <Route path="aprovacoes" element={<Aprovacoes />} />
               <Route path="historico" element={<GerenciaHistorico />} />
               <Route path="usuarios" element={<Usuarios />} />
+              <Route path="auditoria" element={<AuditLog />} />
               <Route path="configuracoes" element={<Configuracoes />} />
             </Route>
 

@@ -1,5 +1,7 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useNavigate, NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
 import {
   LayoutDashboard,
   FilePlus2,
@@ -8,6 +10,7 @@ import {
   Users,
   History,
   Settings,
+  ScrollText,
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,9 +24,10 @@ const gestorNav = [
 
 const gerenciaNav = [
   { to: "/gerencia", icon: LayoutDashboard, label: "Dashboard", end: true, testid: "nav-gerencia-dashboard" },
-  { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", testid: "nav-aprovacoes" },
+  { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", testid: "nav-aprovacoes", badgeKey: "pending" },
   { to: "/gerencia/historico", icon: History, label: "Histórico", testid: "nav-historico" },
   { to: "/gerencia/usuarios", icon: Users, label: "Usuários", testid: "nav-usuarios" },
+  { to: "/gerencia/auditoria", icon: ScrollText, label: "Auditoria", testid: "nav-auditoria" },
   { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", testid: "nav-configuracoes" },
 ];
 
@@ -31,6 +35,17 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const nav = user?.role === "gestor" ? gestorNav : gerenciaNav;
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role !== "gerencia" && user?.role !== "admin") return;
+    const fetchPending = () => {
+      api.get("/requests/stats").then((r) => setPendingCount(r.data.pending)).catch(() => {});
+    };
+    fetchPending();
+    const t = setInterval(fetchPending, 30000);
+    return () => clearInterval(t);
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -78,7 +93,15 @@ export default function Layout() {
               }
             >
               <item.icon size={18} strokeWidth={2} />
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badgeKey === "pending" && pendingCount > 0 && (
+                <span
+                  data-testid="sidebar-pending-badge"
+                  className="ml-auto bg-[#D40511] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center"
+                >
+                  {pendingCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
