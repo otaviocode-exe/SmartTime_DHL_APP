@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import {
   Infinity as InfinityIcon, Timer, Hand, Trash2, ShieldAlert,
-  CheckCircle2, Loader2,
+  CheckCircle2, Loader2, AlertTriangle,
 } from "lucide-react";
 
 const OPTIONS = [
@@ -41,6 +41,8 @@ export default function Configuracoes() {
   const [preview, setPreview] = useState({ eligible: 0, retention_days: 30 });
   const [saving, setSaving] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [purging, setPurging] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   const load = async () => {
     try {
@@ -78,6 +80,24 @@ export default function Configuracoes() {
       toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro na limpeza");
     } finally {
       setCleaning(false);
+    }
+  };
+
+  const runPurgeAll = async () => {
+    if (confirmText !== "EXCLUIR TUDO") {
+      toast.error('Digite exatamente "EXCLUIR TUDO" para confirmar');
+      return;
+    }
+    setPurging(true);
+    try {
+      const { data } = await api.post("/requests/cleanup/all");
+      toast.success(`Histórico excluído: ${data.deleted} solicitação(ões) removida(s)`);
+      setConfirmText("");
+      load();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro ao excluir");
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -208,6 +228,78 @@ export default function Configuracoes() {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-2 border-[#D40511]/30 shadow-sm bg-[#FEE2E2]/20">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="p-2 rounded-md bg-[#D40511] text-white">
+              <AlertTriangle size={20} strokeWidth={2.2} />
+            </div>
+            <div>
+              <div className="uppercase tracking-[0.14em] text-xs font-bold text-[#D40511]">
+                Zona de Perigo
+              </div>
+              <h3 className="font-heading text-xl font-bold text-slate-900 mt-1">
+                Excluir todo o histórico agora
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Remove <b>todas</b> as solicitações do sistema — pendentes, aprovadas e rejeitadas — de uma só vez.
+                Esta ação é <b>irreversível</b> e afeta todos os usuários.
+              </p>
+            </div>
+          </div>
+
+          <AlertDialog onOpenChange={(o) => !o && setConfirmText("")}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-[#D40511] text-[#D40511] hover:bg-[#D40511] hover:text-white font-semibold"
+                data-testid="purge-all-btn"
+              >
+                <Trash2 size={18} className="mr-2" />
+                Excluir todo o histórico
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent data-testid="purge-confirm-dialog">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-heading text-2xl text-[#D40511]">
+                  Excluir TODO o histórico?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <span className="block">
+                    Esta ação removerá <b>permanentemente</b> todas as solicitações
+                    (pendentes, aprovadas e rejeitadas) do banco de dados.
+                    Não há como desfazer.
+                  </span>
+                  <span className="block">
+                    Para confirmar, digite <b className="text-[#D40511] font-mono">EXCLUIR TUDO</b> abaixo:
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="EXCLUIR TUDO"
+                data-testid="purge-confirm-input"
+                className="w-full border border-slate-300 rounded-md px-4 py-2 font-mono focus:ring-2 focus:ring-[#D40511] focus:border-[#D40511] outline-none"
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="purge-cancel">Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={runPurgeAll}
+                  disabled={purging || confirmText !== "EXCLUIR TUDO"}
+                  data-testid="purge-confirm"
+                  className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {purging ? "Excluindo..." : "Confirmar exclusão"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

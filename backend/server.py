@@ -403,6 +403,16 @@ async def cleanup_now(_u: dict = Depends(require_role("gestor", "gerencia", "adm
     deleted = await _run_cleanup()
     return {"deleted": deleted}
 
+@api.post("/requests/cleanup/all")
+async def cleanup_all(_u: dict = Depends(require_role("gestor", "gerencia", "admin"))):
+    res = await db.requests.delete_many({})
+    await db.settings.update_one(
+        {"id": "main"},
+        {"$set": {"last_cleanup": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"deleted": res.deleted_count}
+
 # ---------------- Health ----------------
 @api.get("/")
 async def root():
