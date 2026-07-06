@@ -24,14 +24,14 @@ const OPTIONS = [
   },
   {
     value: "auto",
-    title: "Apagar automaticamente após 1 mês",
-    hint: "Solicitações com mais de 30 dias serão removidas automaticamente pelo sistema.",
+    title: "Apagar automaticamente após 3 meses",
+    hint: "Solicitações com mais de 90 dias serão removidas automaticamente pelo sistema.",
     icon: Timer,
   },
   {
     value: "manual",
-    title: "Apagar manualmente após 1 mês",
-    hint: "Solicitações com mais de 30 dias ficam elegíveis; use o botão abaixo para removê-las.",
+    title: "Apagar manualmente após 3 meses",
+    hint: "Solicitações com mais de 90 dias ficam elegíveis; use o botão abaixo para removê-las.",
     icon: Hand,
   },
 ];

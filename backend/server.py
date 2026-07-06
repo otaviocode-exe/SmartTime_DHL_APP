@@ -149,7 +149,7 @@ class DecisionIn(BaseModel):
 class SettingsIn(BaseModel):
     retention_policy: Literal["never", "auto", "manual"] = "never"
 
-RETENTION_DAYS = 30
+RETENTION_DAYS = 90
 
 async def _get_settings() -> dict:
     doc = await db.settings.find_one({"id": "main"})
