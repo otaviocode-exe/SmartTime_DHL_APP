@@ -11,10 +11,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Usuarios() {
+  const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -26,6 +33,16 @@ export default function Usuarios() {
     api.get("/users").then((r) => setUsers(r.data)).catch(() => {});
 
   useEffect(() => { load(); }, []);
+
+  const removeUser = async (u) => {
+    try {
+      await api.delete(`/users/${u.id}`);
+      toast.success(`${u.name} removido`);
+      load();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro ao remover");
+    }
+  };
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target?.value ?? e });
 
@@ -120,6 +137,7 @@ export default function Usuarios() {
                   <TableHead>Cargo</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Matrícula</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -138,6 +156,43 @@ export default function Usuarios() {
                     </TableCell>
                     <TableCell>{u.setor || "—"}</TableCell>
                     <TableCell>{u.matricula || "—"}</TableCell>
+                    <TableCell className="text-right">
+                      {u.role !== "admin" && u.id !== me?.id && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-testid={`delete-user-${u.id}`}
+                              className="text-[#D40511] hover:bg-[#FEE2E2] hover:text-[#B91C1C] h-8"
+                            >
+                              <Trash2 size={14} className="mr-1" /> Remover
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="font-heading text-xl">
+                                Remover {u.name}?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                O usuário <b>{u.email}</b> não poderá mais acessar o sistema.
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => removeUser(u)}
+                                className="btn-primary"
+                                data-testid={`confirm-delete-user-${u.id}`}
+                              >
+                                Sim, remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

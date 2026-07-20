@@ -227,6 +227,19 @@ async def list_users(_admin: dict = Depends(require_role("gerencia", "admin"))):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 
+@api.delete("/users/{user_id}")
+async def delete_user(user_id: str, current: dict = Depends(require_role("gerencia", "admin"))):
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(404, "Usuário não encontrado")
+    if target["id"] == current["id"]:
+        raise HTTPException(400, "Você não pode remover a si mesmo")
+    if target["role"] == "admin":
+        raise HTTPException(400, "Não é permitido remover contas admin")
+    await db.users.delete_one({"id": user_id})
+    await _audit(current, "DELETE_USER", "user", user_id, f"{target['name']} ({target['email']})")
+    return {"ok": True}
+
 # ---------------- Overtime Requests ----------------
 def _serialize_request(doc: dict) -> dict:
     doc.pop("_id", None)
