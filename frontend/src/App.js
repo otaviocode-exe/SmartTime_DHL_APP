@@ -14,6 +14,7 @@ import Usuarios from "@/pages/Usuarios";
 import Configuracoes from "@/pages/Configuracoes";
 import AuditLog from "@/pages/AuditLog";
 import { Toaster } from "@/components/ui/sonner";
+import InstallPrompt from "@/components/InstallPrompt";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -64,6 +65,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <Toaster position="top-right" richColors />
+          <InstallPrompt />
         </AuthProvider>
       </BrowserRouter>
     </div>

@@ -21,3 +21,12 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+// Register PWA service worker (only on HTTPS / production)
+if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .catch((err) => console.warn("SW registration failed:", err));
+  });
+}
