@@ -109,3 +109,29 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-in-up { animation: fadeInUp 0.35s ease-out both; }
+
+/* ==========================================================================
+   DEVICE MODES — the <html> element gets one of these classes based on the
+   user's device selection. Layout components read the mode from context and
+   these utility rules provide extra visual polish per mode.
+   ========================================================================== */
+
+/* --- CELULAR: force phone-first behaviour on any viewport --- */
+.device-celular .app-shell { max-width: 480px; margin: 0 auto; box-shadow: 0 0 24px rgba(0,0,0,0.06); background: #F8FAFC; min-height: 100vh; }
+.device-celular .cel-hide { display: none !important; }
+.device-celular button, .device-celular a { -webkit-tap-highlight-color: transparent; }
+.device-celular table { font-size: 12px; }
+.device-celular .content-wrap { padding: 0.75rem !important; }
+.device-celular h1 { font-size: 1.75rem !important; }
+.device-celular h2 { font-size: 1.15rem !important; }
+/* Cards on mobile: single column with tighter spacing */
+.device-celular .grid-2 { grid-template-columns: 1fr !important; }
+.device-celular .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+/* --- TABLET: sidebar remains visible but narrower --- */
+.device-tablet .app-shell { max-width: 1100px; margin: 0 auto; background: #F8FAFC; min-height: 100vh; }
+.device-tablet .content-wrap { padding: 1.5rem !important; }
+.device-tablet .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+/* --- NOTEBOOK: no restrictions --- */
+.device-notebook .content-wrap { padding: 2rem !important; }
