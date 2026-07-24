@@ -57,11 +57,13 @@ export default function GerenciaHistorico() {
         const okStatus = statusFilter === "all" || r.status === statusFilter;
         const okTurno = turnoFilter === "all" || r.turno === turnoFilter;
         const okGestor = gestorFilter === "all" || r.gestor_nome === gestorFilter;
+        const okFrom = !dateFrom || r.data >= dateFrom;
+        const okTo = !dateTo || r.data <= dateTo;
         const okText = [r.numero, r.colaborador, r.matricula, r.gestor_nome]
           .join(" ").toLowerCase().includes(q.toLowerCase());
-        return okStatus && okTurno && okGestor && okText;
+        return okStatus && okTurno && okGestor && okFrom && okTo && okText;
       }),
-    [items, q, statusFilter, turnoFilter, gestorFilter]
+    [items, q, statusFilter, turnoFilter, gestorFilter, dateFrom, dateTo]
   );
 
   const gestores = useMemo(
@@ -90,7 +92,7 @@ export default function GerenciaHistorico() {
 
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <div className="flex flex-col md:flex-row md:flex-wrap gap-3 mb-4">
             <div className="relative flex-1 max-w-md">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
@@ -136,6 +138,25 @@ export default function GerenciaHistorico() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="flex gap-2 items-center">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                data-testid="history-date-from"
+                className="w-full md:w-36"
+                title="Data inicial"
+              />
+              <span className="text-slate-400 text-sm">até</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                data-testid="history-date-to"
+                className="w-full md:w-36"
+                title="Data final"
+              />
+            </div>
           </div>
 
           <div className="border border-slate-200 rounded-lg overflow-hidden">

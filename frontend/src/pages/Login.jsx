@@ -24,21 +24,8 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
-    const res = await login(email.trim(), password);
+    await login(email.trim(), password);
     setBusy(false);
-    if (res.ok) {
-      // redirection is handled by the useEffect above once user context updates
-    }
-  };
-
-  const fillDemo = (role) => {
-    if (role === "gestor") {
-      setEmail("gestor@dhl.com");
-      setPassword("gestor123");
-    } else {
-      setEmail("gerente@dhl.com");
-      setPassword("gerente123");
-    }
   };
 
   return (
@@ -137,32 +124,6 @@ export default function Login() {
                 {busy ? <Loader2 className="animate-spin" size={18} /> : <><LogIn size={18} className="mr-2"/>Entrar</>}
               </Button>
             </form>
-
-            <div className="mt-8 pt-6 border-t border-slate-200">
-              <div className="uppercase tracking-[0.1em] text-[10px] font-bold text-slate-500 mb-2">
-                Contas Demo
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  data-testid="demo-gestor-btn"
-                  onClick={() => fillDemo("gestor")}
-                >
-                  Usar Gestor
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  data-testid="demo-gerente-btn"
-                  onClick={() => fillDemo("gerente")}
-                >
-                  Usar Gerência
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

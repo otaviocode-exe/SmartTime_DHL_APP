@@ -1,17 +1,10 @@
-import { useNavigate, NavLink, Outlet } from "react-router-dom";
+import { useNavigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import {
-  LayoutDashboard,
-  FilePlus2,
-  ListTodo,
-  ClipboardList,
-  Users,
-  History,
-  Settings,
-  ScrollText,
-  LogOut,
+  LayoutDashboard, FilePlus2, ListTodo, ClipboardList, Users, History,
+  Settings, ScrollText, LogOut, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,8 +27,12 @@ const gerenciaNav = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const nav = user?.role === "gestor" ? gestorNav : gerenciaNav;
   const [pendingCount, setPendingCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     if (user?.role !== "gerencia" && user?.role !== "admin") return;
@@ -52,77 +49,107 @@ export default function Layout() {
     navigate("/login");
   };
 
-  return (
-    <div className="min-h-screen flex bg-[#F8FAFC]">
-      {/* Sidebar */}
-      <aside
-        data-testid="sidebar"
-        className="w-64 bg-slate-900 text-white flex flex-col border-r border-slate-800"
-      >
-        <div className="px-6 py-6 border-b border-slate-800">
+  const Sidebar = (
+    <aside
+      data-testid="sidebar"
+      className="w-64 bg-slate-900 text-white flex flex-col border-r border-slate-800 h-full"
+    >
+      <div className="px-6 py-6 border-b border-slate-800 flex items-start justify-between">
+        <div>
           <div className="dhl-logo text-white">
             <span className="dhl-logo-mark">DHL</span>
-            <span className="text-sm font-semibold tracking-wide text-slate-200">
-              Horas Extras
-            </span>
+            <span className="text-sm font-semibold tracking-wide text-slate-200">Horas Extras</span>
           </div>
           <div className="mt-4">
             <div className="text-xs uppercase tracking-[0.14em] text-slate-500">
               {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
             </div>
-            <div className="mt-1 text-sm font-medium truncate" data-testid="sidebar-user-name">
-              {user?.name}
-            </div>
+            <div className="mt-1 text-sm font-medium truncate" data-testid="sidebar-user-name">{user?.name}</div>
             <div className="text-xs text-slate-400 truncate">{user?.email}</div>
           </div>
         </div>
+        <button
+          className="md:hidden text-slate-400 hover:text-white"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Fechar menu"
+          data-testid="close-menu-btn"
+        >
+          <X size={22} />
+        </button>
+      </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1">
-          {nav.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              data-testid={item.testid}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
-                  isActive
-                    ? "bg-[#FFCC00] text-slate-900 font-semibold"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`
-              }
-            >
-              <item.icon size={18} strokeWidth={2} />
-              <span className="flex-1">{item.label}</span>
-              {item.badgeKey === "pending" && pendingCount > 0 && (
-                <span
-                  data-testid="sidebar-pending-badge"
-                  className="ml-auto bg-[#D40511] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center"
-                >
-                  {pendingCount}
-                </span>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="p-3 border-t border-slate-800">
-          <Button
-            data-testid="logout-btn"
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start text-slate-300 hover:bg-slate-800 hover:text-white"
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        {nav.map((item) => (
+          <NavLink
+            key={item.to} to={item.to} end={item.end} data-testid={item.testid}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+                isActive ? "bg-[#FFCC00] text-slate-900 font-semibold"
+                         : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              }`
+            }
           >
-            <LogOut size={18} className="mr-2" />
-            Sair
-          </Button>
-        </div>
-      </aside>
+            <item.icon size={18} strokeWidth={2} />
+            <span className="flex-1">{item.label}</span>
+            {item.badgeKey === "pending" && pendingCount > 0 && (
+              <span
+                data-testid="sidebar-pending-badge"
+                className="ml-auto bg-[#D40511] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center"
+              >
+                {pendingCount}
+              </span>
+            )}
+          </NavLink>
+        ))}
+      </nav>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-x-hidden">
+      <div className="p-3 border-t border-slate-800">
+        <Button
+          data-testid="logout-btn" onClick={handleLogout} variant="ghost"
+          className="w-full justify-start text-slate-300 hover:bg-slate-800 hover:text-white"
+        >
+          <LogOut size={18} className="mr-2" /> Sair
+        </Button>
+      </div>
+    </aside>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-[#F8FAFC]">
+      {/* Desktop sidebar */}
+      <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden" data-testid="mobile-drawer">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-64">{Sidebar}</div>
+        </div>
+      )}
+
+      <main className="flex-1 overflow-x-hidden min-w-0">
         <div className="h-1.5 bg-[#FFCC00]" />
-        <div className="p-6 md:p-8 lg:p-10 max-w-7xl mx-auto">
+
+        {/* Mobile header */}
+        <div className="md:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm">
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
+            data-testid="open-menu-btn"
+            className="p-1.5 rounded-md hover:bg-slate-100"
+          >
+            <Menu size={22} className="text-slate-700" />
+          </button>
+          <div className="dhl-logo">
+            <span className="dhl-logo-mark">DHL</span>
+            <span className="text-sm font-bold text-slate-900">Horas Extras</span>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>

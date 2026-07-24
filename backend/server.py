@@ -21,6 +21,8 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
+from integrations.dhl_ponto import get_ponto_adapter
+
 # ---------------- Config ----------------
 JWT_ALGORITHM = "HS256"
 ACCESS_MINUTES = 60 * 8  # 8h shift
@@ -324,6 +326,30 @@ async def _decide(req_id: str, status: str, observ: str, user: dict) -> dict:
         "observacoes_gerencia": observ,
         "data_aprovacao": datetime.now(timezone.utc).isoformat(),
     }
+
+    # If approved, try to register in DHL Ponto system (best-effort)
+    if status == "Aprovada":
+        try:
+            adapter = get_ponto_adapter()
+            result = await adapter.registrar_hora_extra(
+                matricula=doc.get("matricula", ""),
+                data=doc.get("data", ""),
+                hora_inicial=doc.get("hora_inicial", ""),
+                hora_final=doc.get("hora_final", ""),
+                total_horas=doc.get("total_horas", 0),
+                motivo=doc.get("motivo", ""),
+                aprovador_matricula=user.get("matricula", ""),
+            )
+            update["ponto_protocolo"] = result.protocolo
+            update["ponto_sincronizado"] = result.sucesso
+        except NotImplementedError:
+            update["ponto_sincronizado"] = False
+            update["ponto_protocolo"] = ""
+        except Exception as e:
+            logger.warning(f"Falha ao lançar no Ponto: {e}")
+            update["ponto_sincronizado"] = False
+            update["ponto_protocolo"] = ""
+
     await db.requests.update_one({"id": req_id}, {"$set": update})
     doc.update(update)
     await _audit(user, f"{status.upper()}_REQUEST", "request", req_id, f"{doc.get('colaborador')} · {doc.get('data')} · {doc.get('total_horas')}h")
@@ -464,6 +490,22 @@ async def cleanup_all(user: dict = Depends(require_role("gestor", "gerencia", "a
 async def get_audit_log(_u: dict = Depends(require_role("gerencia", "admin"))):
     docs = await db.audit_log.find({}, {"_id": 0}).sort("at", -1).to_list(500)
     return docs
+
+# ---------------- DHL Ponto Integration (SKELETON) ----------------
+@api.get("/integrations/ponto/status")
+async def ponto_status(_u: dict = Depends(get_current_user)):
+    """Verifica se a integração com o Ponto DHL está ativa."""
+    adapter = get_ponto_adapter()
+    return await adapter.status()
+
+@api.get("/integrations/ponto/colaborador/{matricula}")
+async def ponto_colaborador(matricula: str, _u: dict = Depends(get_current_user)):
+    """Autocomplete de dados do colaborador via sistema de Ponto DHL."""
+    adapter = get_ponto_adapter()
+    col = await adapter.buscar_colaborador(matricula)
+    if not col:
+        raise HTTPException(404, "Colaborador não encontrado no Ponto")
+    return col.to_dict()
 
 # ---------------- Health ----------------
 @api.get("/")
