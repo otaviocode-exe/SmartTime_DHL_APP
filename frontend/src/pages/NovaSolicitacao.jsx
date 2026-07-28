@@ -117,10 +117,10 @@ export default function NovaSolicitacao() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="T1">T1 — 1º Turno (14h–16h)</SelectItem>
-                    <SelectItem value="T2">T2 — 2º Turno (22h–00h)</SelectItem>
-                    <SelectItem value="T3">T3 — 3º Turno (06h–08h)</SelectItem>
-                    <SelectItem value="ADM">ADM — Administrativo (17h–19h)</SelectItem>
+                    <SelectItem value="T1">T1 — 1º Turno</SelectItem>
+                    <SelectItem value="T2">T2 — 2º Turno</SelectItem>
+                    <SelectItem value="T3">T3 — 3º Turno</SelectItem>
+                    <SelectItem value="ADM">ADM — Administrativo</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
