@@ -10,19 +10,19 @@ import {
 import { Button } from "@/components/ui/button";
 
 const gestorNav = [
-  { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", end: true, testid: "nav-gestor-dashboard" },
-  { to: "/gestor/nova", icon: FilePlus2, label: "Nova Solicitação", testid: "nav-nova-solicitacao" },
-  { to: "/gestor/minhas", icon: ListTodo, label: "Minhas Solicitações", testid: "nav-minhas-solicitacoes" },
-  { to: "/gestor/configuracoes", icon: Settings, label: "Configurações", testid: "nav-configuracoes-gestor" },
+  { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gestor-dashboard" },
+  { to: "/gestor/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
+  { to: "/gestor/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
+  { to: "/gestor/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes-gestor" },
 ];
 
 const gerenciaNav = [
-  { to: "/gerencia", icon: LayoutDashboard, label: "Dashboard", end: true, testid: "nav-gerencia-dashboard" },
-  { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", testid: "nav-aprovacoes", badgeKey: "pending" },
-  { to: "/gerencia/historico", icon: History, label: "Histórico", testid: "nav-historico" },
-  { to: "/gerencia/usuarios", icon: Users, label: "Usuários", testid: "nav-usuarios" },
-  { to: "/gerencia/auditoria", icon: ScrollText, label: "Auditoria", testid: "nav-auditoria" },
-  { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", testid: "nav-configuracoes" },
+  { to: "/gerencia", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gerencia-dashboard" },
+  { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", short: "Aprovar", testid: "nav-aprovacoes", badgeKey: "pending" },
+  { to: "/gerencia/historico", icon: History, label: "Histórico", short: "Hist.", testid: "nav-historico" },
+  { to: "/gerencia/usuarios", icon: Users, label: "Usuários", short: "Users", testid: "nav-usuarios" },
+  { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes" },
+  { to: "/gerencia/auditoria", icon: ScrollText, label: "Auditoria", short: "Audit.", testid: "nav-auditoria" },
 ];
 
 export default function Layout() {
@@ -151,7 +151,7 @@ export default function Layout() {
           }
         >
           <item.icon size={20} strokeWidth={2} />
-          <span className="truncate max-w-full px-1">{item.label.split(" ")[0]}</span>
+          <span className="truncate max-w-full px-1">{item.short || item.label.split(" ")[0]}</span>
           {item.badgeKey === "pending" && pendingCount > 0 && (
             <span className="absolute top-1 right-1/2 translate-x-4 bg-[#D40511] text-white text-[9px] font-bold px-1.5 rounded-full">
               {pendingCount}

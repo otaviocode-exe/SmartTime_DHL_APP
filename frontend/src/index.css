@@ -139,16 +139,55 @@ h1, h2, h3, h4, h5, h6, .font-heading {
    ========================================================================== */
 
 /* --- CELULAR: force phone-first behaviour on any viewport --- */
-.device-celular .app-shell { max-width: 480px; margin: 0 auto; box-shadow: 0 0 24px rgba(0,0,0,0.06); background: #F8FAFC; min-height: 100vh; }
+.device-celular .app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  box-shadow: 0 0 24px rgba(0,0,0,0.06);
+  background: #F8FAFC;
+  min-height: 100vh;
+  position: relative;
+}
 .device-celular .cel-hide { display: none !important; }
 .device-celular button, .device-celular a { -webkit-tap-highlight-color: transparent; }
 .device-celular table { font-size: 12px; }
-.device-celular .content-wrap { padding: 0.75rem !important; }
-.device-celular h1 { font-size: 1.75rem !important; }
+
+/* Compact typography and spacing */
+.device-celular .content-wrap { padding: 0.75rem 0.875rem 1rem !important; }
+.device-celular h1 { font-size: 1.55rem !important; line-height: 1.2 !important; }
 .device-celular h2 { font-size: 1.15rem !important; }
-/* Cards on mobile: single column with tighter spacing */
-.device-celular .grid-2 { grid-template-columns: 1fr !important; }
-.device-celular .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.device-celular h3 { font-size: 1.05rem !important; }
+
+/* Grids: force single or 2-column max on celular */
+.device-celular .grid-cols-4,
+.device-celular .lg\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.device-celular .lg\:grid-cols-3,
+.device-celular .md\:grid-cols-3,
+.device-celular .sm\:grid-cols-3 { grid-template-columns: 1fr !important; }
+.device-celular .md\:grid-cols-2 { grid-template-columns: 1fr !important; }
+.device-celular .lg\:col-span-2 { grid-column: auto !important; }
+
+/* Buttons full width on cards where useful */
+.device-celular .btn-primary,
+.device-celular .btn-accent { min-height: 44px; padding-left: 16px; padding-right: 16px; }
+
+/* Cards: tighter padding */
+.device-celular [class*="CardContent"] > :first-child,
+.device-celular .p-6,
+.device-celular .p-8,
+.device-celular .md\:p-8 { padding: 1rem !important; }
+
+/* Bottom tabs safe-area (iOS notch) */
+.device-celular nav[data-testid="bottom-tabs"] {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.device-celular main > .h-1\.5 { display: none; } /* hide top yellow bar to save space */
+
+/* Tables become scrollable on celular */
+.device-celular .content-wrap table { min-width: max-content; }
+.device-celular .content-wrap [class*="overflow-hidden"]:has(table) { overflow-x: auto !important; }
+
+/* Filter groups: stack vertically */
+.device-celular .content-wrap .flex.gap-2 { flex-wrap: wrap !important; }
 
 /* --- TABLET: sidebar remains visible but narrower --- */
 .device-tablet .app-shell { max-width: 1100px; margin: 0 auto; background: #F8FAFC; min-height: 100vh; }

@@ -12,10 +12,12 @@ import {
 import { toast } from "sonner";
 import {
   Infinity as InfinityIcon, Timer, Hand, Trash2, ShieldAlert,
-  CheckCircle2, Loader2, AlertTriangle, Sun, Moon, Smartphone, Tablet, Laptop,
+  CheckCircle2, Loader2, AlertTriangle, Sun, Moon, Smartphone, Tablet, Laptop, LogOut,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useDevice } from "@/context/DeviceContext";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const OPTIONS = [
   {
@@ -41,6 +43,8 @@ const OPTIONS = [
 export default function Configuracoes() {
   const { theme, setTheme } = useTheme();
   const { deviceMode, setDeviceMode } = useDevice();
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [preview, setPreview] = useState({ eligible: 0, retention_days: 30 });
   const [saving, setSaving] = useState(false);
@@ -103,6 +107,11 @@ export default function Configuracoes() {
     } finally {
       setPurging(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
   };
 
   if (!settings) return null;
@@ -382,6 +391,33 @@ export default function Configuracoes() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </CardContent>
+      </Card>
+
+      {/* --- CONTA / SAIR --- */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">
+                Conta
+              </div>
+              <h3 className="font-heading text-xl font-bold text-slate-900 mt-1">
+                Sessão atual
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Logado como <b className="text-slate-700">{user?.name}</b> ({user?.email})
+              </p>
+            </div>
+            <Button
+              onClick={handleLogout}
+              data-testid="config-logout-btn"
+              className="btn-primary rounded-md font-semibold self-start md:self-center"
+            >
+              <LogOut size={18} className="mr-2" />
+              Sair da conta
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
