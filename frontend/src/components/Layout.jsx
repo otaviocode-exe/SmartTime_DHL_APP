@@ -139,9 +139,9 @@ export default function Layout() {
     <nav
       data-testid="bottom-tabs"
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-slate-200 grid pb-safe z-40"
-      style={{ gridTemplateColumns: `repeat(${Math.min(nav.length, 5)}, 1fr)` }}
+      style={{ gridTemplateColumns: `repeat(${Math.min(nav.length, 6)}, 1fr)` }}
     >
-      {nav.slice(0, 5).map((item) => (
+      {nav.slice(0, 6).map((item) => (
         <NavLink
           key={item.to} to={item.to} end={item.end}
           className={({ isActive }) =>
