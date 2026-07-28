@@ -21,8 +21,8 @@ const gerenciaNav = [
   { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", short: "Aprovar", testid: "nav-aprovacoes", badgeKey: "pending" },
   { to: "/gerencia/historico", icon: History, label: "Histórico", short: "Hist.", testid: "nav-historico" },
   { to: "/gerencia/usuarios", icon: Users, label: "Usuários", short: "Users", testid: "nav-usuarios" },
-  { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes" },
   { to: "/gerencia/auditoria", icon: ScrollText, label: "Auditoria", short: "Audit.", testid: "nav-auditoria" },
+  { to: "/gerencia/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes" },
 ];
 
 export default function Layout() {
