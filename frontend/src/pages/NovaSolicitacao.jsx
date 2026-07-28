@@ -21,6 +21,13 @@ function calcHoras(hi, hf) {
   return Math.round((mins / 60) * 100) / 100;
 }
 
+const TURNO_HORARIOS = {
+  T1:  { hora_inicial: "14:00", hora_final: "16:00" },
+  T2:  { hora_inicial: "22:00", hora_final: "00:00" },
+  T3:  { hora_inicial: "06:00", hora_final: "08:00" },
+  ADM: { hora_inicial: "17:00", hora_final: "19:00" },
+};
+
 export default function NovaSolicitacao() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -29,8 +36,8 @@ export default function NovaSolicitacao() {
     turno: "ADM",
     setor: "",
     data: new Date().toISOString().slice(0, 10),
-    hora_inicial: "18:00",
-    hora_final: "20:00",
+    hora_inicial: TURNO_HORARIOS.ADM.hora_inicial,
+    hora_final: TURNO_HORARIOS.ADM.hora_final,
     motivo: "",
     observacoes: "",
   });
@@ -94,15 +101,26 @@ export default function NovaSolicitacao() {
                 <Input required data-testid="input-matricula" value={form.matricula} onChange={set("matricula")} placeholder="Ex.: 12345" />
               </Field>
               <Field label="Turno" required>
-                <Select value={form.turno} onValueChange={(v) => setForm({ ...form, turno: v })}>
+                <Select
+                  value={form.turno}
+                  onValueChange={(v) => {
+                    const h = TURNO_HORARIOS[v] || {};
+                    setForm({
+                      ...form,
+                      turno: v,
+                      hora_inicial: h.hora_inicial ?? form.hora_inicial,
+                      hora_final: h.hora_final ?? form.hora_final,
+                    });
+                  }}
+                >
                   <SelectTrigger data-testid="input-turno" className="mt-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="T1">T1 — 1º Turno</SelectItem>
-                    <SelectItem value="T2">T2 — 2º Turno</SelectItem>
-                    <SelectItem value="T3">T3 — 3º Turno</SelectItem>
-                    <SelectItem value="ADM">ADM — Administrativo</SelectItem>
+                    <SelectItem value="T1">T1 — 1º Turno (14h–16h)</SelectItem>
+                    <SelectItem value="T2">T2 — 2º Turno (22h–00h)</SelectItem>
+                    <SelectItem value="T3">T3 — 3º Turno (06h–08h)</SelectItem>
+                    <SelectItem value="ADM">ADM — Administrativo (17h–19h)</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
