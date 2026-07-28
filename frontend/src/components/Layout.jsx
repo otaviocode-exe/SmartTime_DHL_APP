@@ -174,8 +174,8 @@ export default function Layout() {
         <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
       )}
 
-      {/* Drawer (used for celular and as fallback below md breakpoint) */}
-      {mobileOpen && (
+      {/* Drawer (used for tablet mode below md breakpoint and notebook mode on smaller screens — NOT for celular) */}
+      {mobileOpen && !isCelular && (
         <div className={`fixed inset-0 z-50 ${isNotebook ? "md:hidden" : ""}`} data-testid="mobile-drawer">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-72">{Sidebar}</div>
@@ -185,14 +185,29 @@ export default function Layout() {
       <main className="flex-1 overflow-x-hidden min-w-0">
         <div className="h-1.5 bg-[#FFCC00]" />
 
-        {/* Top bar: for celular AND on small screens for notebook (auto-adaptive) */}
-        {(isCelular || (isNotebook && true)) && (
-          <div className={`${isCelular ? "" : "md:hidden"} sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm`}>
+        {/* Top bar: for celular (logo only, no hamburger) AND on small screens for notebook */}
+        {isCelular ? (
+          <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
+            <div className="dhl-logo">
+              <span className="dhl-logo-mark">DHL</span>
+              <span className="text-sm font-bold text-slate-900">Horas Extras</span>
+            </div>
+            <div className="text-right leading-tight">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
+              </div>
+              <div className="text-xs font-semibold text-slate-900 truncate max-w-[140px]">
+                {user?.name?.split(" ")[0]}
+              </div>
+            </div>
+          </div>
+        ) : isNotebook ? (
+          <div className="md:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm">
             <button
               onClick={() => setMobileOpen(true)}
               aria-label="Abrir menu"
               data-testid="open-menu-btn"
-              className={`p-1.5 rounded-md hover:bg-slate-100 ${isCelular ? "" : ""}`}
+              className="p-1.5 rounded-md hover:bg-slate-100"
             >
               <Menu size={22} className="text-slate-700" />
             </button>
@@ -201,7 +216,7 @@ export default function Layout() {
               <span className="text-sm font-bold text-slate-900">Horas Extras</span>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className={`content-wrap ${isNotebook ? "p-4 md:p-8 lg:p-10 max-w-7xl mx-auto" : isTablet ? "p-6 max-w-4xl mx-auto" : "px-4 py-4"}`}>
           <Outlet />
