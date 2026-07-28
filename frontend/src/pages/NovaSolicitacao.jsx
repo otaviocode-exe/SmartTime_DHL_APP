@@ -40,6 +40,7 @@ export default function NovaSolicitacao() {
     () => calcHoras(form.hora_inicial, form.hora_final),
     [form.hora_inicial, form.hora_final]
   );
+  const exceedsLimit = totalHoras > 2;
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -47,6 +48,10 @@ export default function NovaSolicitacao() {
     e.preventDefault();
     if (totalHoras <= 0) {
       toast.error("Hora final deve ser posterior à hora inicial.");
+      return;
+    }
+    if (exceedsLimit) {
+      toast.error("Limite excedido — contate o supervisor/gerente.");
       return;
     }
     setBusy(true);
@@ -119,12 +124,38 @@ export default function NovaSolicitacao() {
               <Field label="Total (Horas)">
                 <div
                   data-testid="total-horas"
-                  className="mt-1.5 h-10 px-4 flex items-center rounded-md border border-slate-300 bg-[#FFCC00]/20 font-semibold text-slate-900"
+                  className={`mt-1.5 h-10 px-4 flex items-center rounded-md border font-semibold ${
+                    exceedsLimit
+                      ? "border-[#D40511] bg-[#FEE2E2] text-[#B91C1C]"
+                      : "border-slate-300 bg-[#FFCC00]/20 text-slate-900"
+                  }`}
                 >
                   {totalHoras.toFixed(2)}h
                 </div>
               </Field>
             </div>
+
+            {exceedsLimit && (
+              <div
+                data-testid="limit-warning"
+                className="rounded-lg border-2 border-[#D40511] bg-[#FEE2E2] p-4 flex items-start gap-3"
+              >
+                <div className="p-2 rounded-md bg-[#D40511] text-white shrink-0">
+                  <span className="block w-5 h-5 text-center font-bold leading-5">!</span>
+                </div>
+                <div>
+                  <div className="font-heading text-base font-bold text-[#7F1D1D]">
+                    Limite de 2 horas excedido
+                  </div>
+                  <p className="text-sm text-[#7F1D1D] mt-1 leading-relaxed">
+                    Solicitações de <b>hora extra acima de 2 horas</b> precisam de
+                    aprovação direta do seu <b>supervisor ou gerente da área</b>.
+                    Por favor, entre em contato com ele antes de prosseguir — o
+                    envio pelo sistema está bloqueado neste caso.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <Field label="Motivo da Hora Extra" required>
               <Textarea
@@ -151,9 +182,9 @@ export default function NovaSolicitacao() {
               <Button type="button" variant="outline" onClick={() => navigate(-1)} data-testid="cancel-btn">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={busy} className="btn-primary rounded-md font-semibold" data-testid="submit-request-btn">
+              <Button type="submit" disabled={busy || exceedsLimit} className="btn-primary rounded-md font-semibold disabled:opacity-40 disabled:cursor-not-allowed" data-testid="submit-request-btn">
                 <Save size={18} className="mr-2" />
-                {busy ? "Enviando..." : "Enviar Solicitação"}
+                {busy ? "Enviando..." : exceedsLimit ? "Contate o supervisor" : "Enviar Solicitação"}
               </Button>
             </div>
           </form>

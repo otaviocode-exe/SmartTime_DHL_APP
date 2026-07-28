@@ -12,8 +12,10 @@ import {
 import { toast } from "sonner";
 import {
   Infinity as InfinityIcon, Timer, Hand, Trash2, ShieldAlert,
-  CheckCircle2, Loader2, AlertTriangle,
+  CheckCircle2, Loader2, AlertTriangle, Sun, Moon, Smartphone, Tablet, Laptop,
 } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
+import { useDevice } from "@/context/DeviceContext";
 
 const OPTIONS = [
   {
@@ -37,6 +39,8 @@ const OPTIONS = [
 ];
 
 export default function Configuracoes() {
+  const { theme, setTheme } = useTheme();
+  const { deviceMode, setDeviceMode } = useDevice();
   const [settings, setSettings] = useState(null);
   const [preview, setPreview] = useState({ eligible: 0, retention_days: 30 });
   const [saving, setSaving] = useState(false);
@@ -111,9 +115,87 @@ export default function Configuracoes() {
           Configurações
         </h1>
         <p className="text-slate-500 mt-1">
-          Defina a política de retenção de dados das solicitações.
+          Personalize a experiência e gerencie os dados do sistema.
         </p>
       </div>
+
+      {/* --- APARÊNCIA: TEMA --- */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-6 md:p-8">
+          <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500 mb-1">
+            Aparência
+          </div>
+          <h3 className="font-heading text-xl font-bold text-slate-900 mb-4">Tema</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { value: "light", title: "Claro", hint: "Fundo branco, texto escuro", icon: Sun },
+              { value: "dark", title: "Escuro", hint: "Fundo escuro, ideal para uso noturno", icon: Moon },
+            ].map((t) => {
+              const active = theme === t.value;
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setTheme(t.value)}
+                  data-testid={`theme-${t.value}`}
+                  className={`flex items-center gap-4 p-4 rounded-lg border-2 text-left transition-colors ${
+                    active ? "border-[#FFCC00] bg-[#FFCC00]/10" : "border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-md ${active ? "bg-[#FFCC00] text-slate-900" : "bg-slate-100 text-slate-500"}`}>
+                    <t.icon size={20} strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-heading text-base font-bold text-slate-900">{t.title}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{t.hint}</div>
+                  </div>
+                  {active && <CheckCircle2 size={20} className="text-[#15803D]" />}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* --- DISPOSITIVO --- */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-6 md:p-8">
+          <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500 mb-1">
+            Interface
+          </div>
+          <h3 className="font-heading text-xl font-bold text-slate-900 mb-1">Layout do dispositivo</h3>
+          <p className="text-sm text-slate-500 mb-4">Otimize a interface para o dispositivo que você está usando.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { value: "celular", title: "Celular", hint: "Menu inferior, layout compacto", icon: Smartphone },
+              { value: "tablet", title: "Tablet / iPad", hint: "Sidebar + 2 colunas", icon: Tablet },
+              { value: "notebook", title: "Notebook", hint: "Experiência completa", icon: Laptop },
+            ].map((d) => {
+              const active = deviceMode === d.value;
+              return (
+                <button
+                  key={d.value}
+                  onClick={() => setDeviceMode(d.value)}
+                  data-testid={`config-device-${d.value}`}
+                  className={`flex flex-col items-start gap-3 p-4 rounded-lg border-2 text-left transition-colors ${
+                    active ? "border-[#FFCC00] bg-[#FFCC00]/10" : "border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-md ${active ? "bg-[#FFCC00] text-slate-900" : "bg-slate-100 text-slate-500"}`}>
+                    <d.icon size={22} strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+                      {d.title}
+                      {active && <CheckCircle2 size={16} className="text-[#15803D]" />}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">{d.hint}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6 md:p-8">

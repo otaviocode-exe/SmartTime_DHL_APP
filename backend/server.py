@@ -141,7 +141,7 @@ class RequestCreateIn(BaseModel):
     data: str  # YYYY-MM-DD
     hora_inicial: str  # HH:MM
     hora_final: str  # HH:MM
-    total_horas: float = Field(gt=0, le=24)
+    total_horas: float = Field(gt=0, le=2, description="Máximo permitido: 2 horas por solicitação (CLT)")
     motivo: str = Field(min_length=3)
     observacoes: str = ""
 
@@ -249,6 +249,25 @@ def _serialize_request(doc: dict) -> dict:
 
 @api.post("/requests")
 async def create_request(body: RequestCreateIn, user: dict = Depends(require_role("gestor", "admin"))):
+    if body.total_horas > 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Solicitações acima de 2 horas exigem aprovação direta do supervisor ou gerente. Entre em contato com ele.",
+        )
+
+    # Overlap validation
+    existing = await db.requests.find({
+        "matricula": body.matricula,
+        "data": body.data,
+        "status": {"$in": ["Pendente", "Aprovada"]},
+    }).to_list(200)
+    for r in existing:
+        if body.hora_inicial < r["hora_final"] and body.hora_final > r["hora_inicial"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Já existe solicitação {r['status'].lower()} para esta matrícula neste horário ({r['hora_inicial']}–{r['hora_final']})",
+            )
+
     doc = {
         "id": str(uuid.uuid4()),
         "numero": f"HE-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:4].upper()}",
@@ -263,6 +282,8 @@ async def create_request(body: RequestCreateIn, user: dict = Depends(require_rol
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.requests.insert_one(doc)
+    await _audit(user, "CREATE_REQUEST", "request", doc["id"], f"{body.colaborador} · {body.data} · {body.total_horas}h")
+    return _serialize_request(doc)
     return _serialize_request(doc)
 
 @api.get("/requests/mine")
