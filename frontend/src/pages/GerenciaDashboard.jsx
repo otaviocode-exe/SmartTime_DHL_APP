@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle2, XCircle, Calendar, ArrowRight } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Calendar, ArrowRight, X } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -15,13 +15,28 @@ export default function GerenciaDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ pending: 0, approved_today: 0, rejected_today: 0, total_month: 0 });
   const [items, setItems] = useState([]);
+  const [turnoFilter, setTurnoFilter] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
 
   useEffect(() => {
     api.get("/requests/stats").then((r) => setStats(r.data)).catch(() => {});
     api.get("/requests").then((r) => setItems(r.data)).catch(() => {});
   }, []);
 
-  const recent = items.slice(0, 6);
+  const filteredItems = useMemo(() => {
+    return items.filter((r) => {
+      const okTurno = !turnoFilter || r.turno === turnoFilter;
+      const okStatus = !statusFilter || r.status === statusFilter;
+      return okTurno && okStatus;
+    });
+  }, [items, turnoFilter, statusFilter]);
+
+  const recent = filteredItems.slice(0, 10);
+  const hasFilter = !!(turnoFilter || statusFilter);
+  const clearFilters = () => { setTurnoFilter(null); setStatusFilter(null); };
+
+  const toggleTurno = (t) => setTurnoFilter((prev) => (prev === t ? null : t));
+  const toggleStatus = (s) => setStatusFilter((prev) => (prev === s ? null : s));
 
   // Chart 1: requests by turno
   const byTurno = useMemo(() => {
@@ -92,7 +107,12 @@ export default function GerenciaDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="border-slate-200 shadow-sm lg:col-span-2">
           <CardContent className="p-6">
-            <h2 className="font-heading text-lg font-bold text-slate-900 mb-4">Solicitações por Turno</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-bold text-slate-900">Solicitações por Turno</h2>
+              <span className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-semibold">
+                Clique para filtrar
+              </span>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={byTurno} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
@@ -103,7 +123,21 @@ export default function GerenciaDashboard() {
                     contentStyle={{ borderRadius: 8, border: "1px solid #E2E8F0", fontSize: 12 }}
                     cursor={{ fill: "rgba(255,204,0,0.15)" }}
                   />
-                  <Bar dataKey="total" fill="#FFCC00" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="total"
+                    radius={[6, 6, 0, 0]}
+                    onClick={(d) => toggleTurno(d.turno)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {byTurno.map((entry) => (
+                      <Cell
+                        key={entry.turno}
+                        fill={turnoFilter === entry.turno ? "#D40511" : "#FFCC00"}
+                        stroke={turnoFilter === entry.turno ? "#7F1D1D" : "none"}
+                        strokeWidth={turnoFilter === entry.turno ? 2 : 0}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -112,7 +146,9 @@ export default function GerenciaDashboard() {
 
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-6">
-            <h2 className="font-heading text-lg font-bold text-slate-900 mb-4">Distribuição por Status</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading text-lg font-bold text-slate-900">Distribuição por Status</h2>
+            </div>
             <div className="h-64">
               {byStatus.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-slate-400 text-sm">
@@ -124,13 +160,23 @@ export default function GerenciaDashboard() {
                     <Pie
                       data={byStatus} dataKey="value" nameKey="status"
                       cx="50%" cy="50%" outerRadius={70} innerRadius={40} paddingAngle={2}
+                      onClick={(d) => toggleStatus(d.status)}
+                      style={{ cursor: "pointer" }}
                     >
                       {byStatus.map((entry) => (
-                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status]} />
+                        <Cell
+                          key={entry.status}
+                          fill={STATUS_COLORS[entry.status]}
+                          stroke={statusFilter === entry.status ? "#0F172A" : "none"}
+                          strokeWidth={statusFilter === entry.status ? 3 : 0}
+                        />
                       ))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Legend
+                      wrapperStyle={{ fontSize: 11, cursor: "pointer" }}
+                      onClick={(d) => toggleStatus(d.value)}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -141,22 +187,60 @@ export default function GerenciaDashboard() {
 
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl font-bold text-slate-900">Últimas Solicitações</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="font-heading text-xl font-bold text-slate-900">
+                {hasFilter ? "Solicitações filtradas" : "Últimas Solicitações"}
+              </h2>
+              {turnoFilter && (
+                <span
+                  data-testid="active-filter-turno"
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-[#FFCC00] bg-[#FFCC00]/20 text-slate-900"
+                >
+                  Turno: {turnoFilter}
+                  <button onClick={() => setTurnoFilter(null)} className="hover:text-[#D40511]" aria-label="Remover">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {statusFilter && (
+                <span
+                  data-testid="active-filter-status"
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-slate-300 bg-slate-100 text-slate-800"
+                  style={{ borderColor: STATUS_COLORS[statusFilter], color: "#0F172A" }}
+                >
+                  Status: {statusFilter}
+                  <button onClick={() => setStatusFilter(null)} className="hover:text-[#D40511]" aria-label="Remover">
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {hasFilter && (
+                <button
+                  onClick={clearFilters}
+                  data-testid="clear-filters-btn"
+                  className="text-xs text-slate-500 hover:text-[#D40511] underline underline-offset-2"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
             <Link to="/gerencia/historico" className="text-sm text-[#D40511] font-semibold hover:underline">
               Ver histórico →
             </Link>
           </div>
           {recent.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">Nenhuma solicitação registrada.</div>
+            <div className="text-center py-12 text-slate-500">
+              {hasFilter ? "Nenhuma solicitação corresponde aos filtros selecionados." : "Nenhuma solicitação registrada."}
+            </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {recent.map((r) => (
-                <div key={r.id} className="py-3 flex items-center justify-between gap-4">
+                <div key={r.id} className="py-3 flex items-center justify-between gap-4" data-testid={`recent-request-${r.id}`}>
                   <div className="min-w-0">
                     <div className="font-semibold text-slate-900 truncate">{r.colaborador}</div>
                     <div className="text-xs text-slate-500">
-                      {r.numero} · {r.data} · {r.total_horas}h · Gestor: {r.gestor_nome}
+                      {r.numero} · {r.data} · {r.total_horas}h · Turno: {r.turno} · Gestor: {r.gestor_nome}
                     </div>
                   </div>
                   <StatusBadge status={r.status} />
