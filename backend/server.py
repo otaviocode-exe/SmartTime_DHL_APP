@@ -22,6 +22,10 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
 from integrations.dhl_ponto import get_ponto_adapter
+from integrations.storage import init_storage, put_object, get_object, APP_NAME as STORAGE_APP
+from integrations.ai_classifier import classify_motivo
+
+from fastapi import UploadFile, File
 
 # ---------------- Config ----------------
 JWT_ALGORITHM = "HS256"
@@ -296,6 +300,15 @@ async def create_request(body: RequestCreateIn, user: dict = Depends(require_rol
     }
     await db.requests.insert_one(doc)
     await _audit(user, "CREATE_REQUEST", "request", doc["id"], f"{body.colaborador} · {body.data} · {body.total_horas}h")
+
+    # Fire-and-forget AI classification of motivo
+    try:
+        categoria = await classify_motivo(body.motivo)
+        await db.requests.update_one({"id": doc["id"]}, {"$set": {"categoria_ia": categoria}})
+        doc["categoria_ia"] = categoria
+    except Exception as e:
+        logger.warning(f"AI classify failed: {e}")
+
     return _serialize_request(doc)
     return _serialize_request(doc)
 
@@ -557,6 +570,78 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
     )
     return {"updated": res.modified_count}
 
+# ---------------- Attachments (Object Storage) ----------------
+MAX_ATTACHMENT_MB = 10
+
+@api.post("/requests/{req_id}/attachments")
+async def upload_attachment(req_id: str, file: UploadFile = File(...),
+                            user: dict = Depends(get_current_user)):
+    req = await db.requests.find_one({"id": req_id})
+    if not req:
+        raise HTTPException(404, "Solicitação não encontrada")
+    if user["role"] == "gestor" and req["gestor_id"] != user["id"]:
+        raise HTTPException(403, "Sem permissão para esta solicitação")
+
+    data = await file.read()
+    if len(data) > MAX_ATTACHMENT_MB * 1024 * 1024:
+        raise HTTPException(400, f"Arquivo maior que {MAX_ATTACHMENT_MB}MB")
+
+    ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else "bin"
+    if ext not in {"pdf", "png", "jpg", "jpeg", "webp"}:
+        raise HTTPException(400, "Formato não permitido (pdf, png, jpg, jpeg, webp)")
+
+    att_id = str(uuid.uuid4())
+    path = f"{STORAGE_APP}/attachments/{req_id}/{att_id}.{ext}"
+    try:
+        result = put_object(path, data, file.content_type or "application/octet-stream")
+    except Exception as e:
+        raise HTTPException(500, f"Erro ao salvar anexo: {e}")
+
+    doc = {
+        "id": att_id,
+        "request_id": req_id,
+        "storage_path": result["path"],
+        "original_filename": file.filename or f"anexo.{ext}",
+        "content_type": file.content_type or "application/octet-stream",
+        "size": result.get("size", len(data)),
+        "uploaded_by": user["id"],
+        "uploaded_by_name": user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.attachments.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api.get("/requests/{req_id}/attachments")
+async def list_attachments(req_id: str, user: dict = Depends(get_current_user)):
+    req = await db.requests.find_one({"id": req_id})
+    if not req:
+        raise HTTPException(404, "Solicitação não encontrada")
+    if user["role"] == "gestor" and req["gestor_id"] != user["id"]:
+        raise HTTPException(403, "Sem permissão")
+    docs = await db.attachments.find({"request_id": req_id}, {"_id": 0}).to_list(50)
+    return docs
+
+@api.get("/attachments/{att_id}/download")
+async def download_attachment(att_id: str, user: dict = Depends(get_current_user)):
+    att = await db.attachments.find_one({"id": att_id})
+    if not att:
+        raise HTTPException(404, "Anexo não encontrado")
+    req = await db.requests.find_one({"id": att["request_id"]})
+    if not req:
+        raise HTTPException(404, "Solicitação não encontrada")
+    if user["role"] == "gestor" and req["gestor_id"] != user["id"]:
+        raise HTTPException(403, "Sem permissão")
+    try:
+        data, ct = get_object(att["storage_path"])
+    except Exception as e:
+        raise HTTPException(500, f"Erro ao baixar anexo: {e}")
+    return Response(
+        content=data,
+        media_type=att.get("content_type", ct),
+        headers={"Content-Disposition": f'inline; filename="{att["original_filename"]}"'},
+    )
+
 # ---------------- Bulk Approve/Reject ----------------
 class BulkDecisionIn(BaseModel):
     request_ids: list[str]
@@ -766,6 +851,12 @@ async def on_startup():
     await db.requests.create_index("gestor_id")
     await db.requests.create_index("status")
     await db.requests.create_index("created_at")
+    await db.attachments.create_index("request_id")
+
+    try:
+        init_storage()
+    except Exception as e:
+        logger.warning(f"Storage init at startup: {e}")
 
     await seed_user(os.environ["ADMIN_EMAIL"], os.environ["ADMIN_PASSWORD"],
                     "Administrador DHL", "admin", "TI", "ADM001")

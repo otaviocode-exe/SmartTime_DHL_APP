@@ -11,6 +11,7 @@ import StatusBadge from "@/components/StatusBadge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
+import Attachments from "@/components/Attachments";
 
 export default function MinhasSolicitacoes() {
   const [items, setItems] = useState([]);
@@ -152,6 +153,11 @@ export function RequestDetailDialog({ request, onClose }) {
             </div>
             <div className="mt-2">
               <Info label="Motivo" value={request.motivo} block />
+              {request.categoria_ia && (
+                <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-slate-100 border border-slate-300 text-slate-700">
+                  🤖 IA: {request.categoria_ia.replace("_", " ")}
+                </div>
+              )}
               {request.observacoes && <Info label="Observações do Gestor" value={request.observacoes} block />}
               {request.observacoes_gerencia && (
                 <Info label="Observações da Gerência" value={request.observacoes_gerencia} block />
@@ -159,6 +165,7 @@ export function RequestDetailDialog({ request, onClose }) {
               {request.data_aprovacao && (
                 <Info label="Data da Decisão" value={new Date(request.data_aprovacao).toLocaleString("pt-BR")} block />
               )}
+              <Attachments requestId={request.id} readOnly={request.status !== "Pendente"} />
             </div>
           </>
         )}

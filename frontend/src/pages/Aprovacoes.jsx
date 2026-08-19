@@ -9,6 +9,7 @@ import StatusBadge from "@/components/StatusBadge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
+import Attachments from "@/components/Attachments";
 import { Check, X, Inbox, CheckCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -220,7 +221,13 @@ export default function Aprovacoes() {
 
               <div className="mt-2">
                 <Info label="Motivo" value={selected.motivo} block />
+                {selected.categoria_ia && (
+                  <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-[#FFCC00]/20 border border-[#FFCC00] text-slate-900">
+                    🤖 Categoria IA: {selected.categoria_ia.replace("_", " ")}
+                  </div>
+                )}
                 {selected.observacoes && <Info label="Observações do Gestor" value={selected.observacoes} block />}
+                <Attachments requestId={selected.id} readOnly />
               </div>
 
               <div className="mt-4">
