@@ -174,6 +174,19 @@ async def _audit(user: dict, action: str, target_type: str, target_id: str = "",
         "details": details,
     })
 
+async def _notify(user_id: str, type_: str, title: str, message: str, request_id: str = ""):
+    """Create in-app notification for a user."""
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": type_,           # 'approved' | 'rejected' | 'cancelled' | 'new_request'
+        "title": title,
+        "message": message,
+        "request_id": request_id,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
 async def _run_cleanup() -> int:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)).isoformat()
     res = await db.requests.delete_many({"created_at": {"$lt": cutoff}})
@@ -374,6 +387,15 @@ async def _decide(req_id: str, status: str, observ: str, user: dict) -> dict:
     await db.requests.update_one({"id": req_id}, {"$set": update})
     doc.update(update)
     await _audit(user, f"{status.upper()}_REQUEST", "request", req_id, f"{doc.get('colaborador')} · {doc.get('data')} · {doc.get('total_horas')}h")
+
+    # Notify the gestor who created the request
+    await _notify(
+        user_id=doc["gestor_id"],
+        type_=status.lower(),
+        title=f"Solicitação {status.lower()}",
+        message=f"Sua solicitação para {doc.get('colaborador', '')} ({doc.get('data', '')}) foi {status.lower()} por {user['name']}.",
+        request_id=req_id,
+    )
     return _serialize_request(doc)
 
 @api.post("/requests/{req_id}/cancel")
@@ -511,6 +533,176 @@ async def cleanup_all(user: dict = Depends(require_role("gestor", "gerencia", "a
 async def get_audit_log(_u: dict = Depends(require_role("gerencia", "admin"))):
     docs = await db.audit_log.find({}, {"_id": 0}).sort("at", -1).to_list(500)
     return docs
+
+# ---------------- Notifications ----------------
+@api.get("/notifications")
+async def get_notifications(user: dict = Depends(get_current_user)):
+    docs = await db.notifications.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    unread = sum(1 for n in docs if not n.get("read"))
+    return {"items": docs, "unread": unread}
+
+@api.post("/notifications/{notif_id}/read")
+async def mark_read(notif_id: str, user: dict = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"id": notif_id, "user_id": user["id"]},
+        {"$set": {"read": True}},
+    )
+    return {"ok": True}
+
+@api.post("/notifications/read-all")
+async def mark_all_read(user: dict = Depends(get_current_user)):
+    res = await db.notifications.update_many(
+        {"user_id": user["id"], "read": False},
+        {"$set": {"read": True}},
+    )
+    return {"updated": res.modified_count}
+
+# ---------------- Bulk Approve/Reject ----------------
+class BulkDecisionIn(BaseModel):
+    request_ids: list[str]
+    observacoes_gerencia: str = ""
+
+@api.post("/requests/bulk-approve")
+async def bulk_approve(body: BulkDecisionIn, user: dict = Depends(require_role("gerencia", "admin"))):
+    results = {"approved": [], "failed": []}
+    for rid in body.request_ids:
+        try:
+            await _decide(rid, "Aprovada", body.observacoes_gerencia, user)
+            results["approved"].append(rid)
+        except HTTPException as e:
+            results["failed"].append({"id": rid, "error": e.detail})
+    return results
+
+@api.post("/requests/bulk-reject")
+async def bulk_reject(body: BulkDecisionIn, user: dict = Depends(require_role("gerencia", "admin"))):
+    results = {"rejected": [], "failed": []}
+    for rid in body.request_ids:
+        try:
+            await _decide(rid, "Rejeitada", body.observacoes_gerencia, user)
+            results["rejected"].append(rid)
+        except HTTPException as e:
+            results["failed"].append({"id": rid, "error": e.detail})
+    return results
+
+# ---------------- Monthly PDF Report ----------------
+@api.get("/reports/monthly.pdf")
+async def monthly_pdf(month: Optional[str] = None,
+                      _u: dict = Depends(require_role("gerencia", "admin"))):
+    """Generate a PDF summary. month format: YYYY-MM (default: current)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors as rl_colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+    now = datetime.now(timezone.utc)
+    if not month:
+        month = now.strftime("%Y-%m")
+    start = f"{month}-01T00:00:00"
+    # end = first day of next month
+    y, m = month.split("-")
+    y, m = int(y), int(m)
+    if m == 12:
+        next_month = f"{y+1}-01-01T00:00:00"
+    else:
+        next_month = f"{y}-{m+1:02d}-01T00:00:00"
+
+    docs = await db.requests.find({
+        "created_at": {"$gte": start, "$lt": next_month}
+    }, {"_id": 0}).sort("created_at", -1).to_list(2000)
+
+    # Stats
+    stats = {"total": len(docs), "aprovadas": 0, "rejeitadas": 0, "pendentes": 0, "canceladas": 0}
+    horas_por_turno = {"T1": 0, "T2": 0, "T3": 0, "ADM": 0}
+    top_colab = {}
+    for d in docs:
+        status_key = {"Aprovada": "aprovadas", "Rejeitada": "rejeitadas", "Pendente": "pendentes", "Cancelada": "canceladas"}.get(d.get("status"), None)
+        if status_key:
+            stats[status_key] += 1
+        if d.get("status") == "Aprovada":
+            t = d.get("turno") or "ADM"
+            if t in horas_por_turno:
+                horas_por_turno[t] += float(d.get("total_horas", 0) or 0)
+            col = d.get("colaborador", "—")
+            top_colab[col] = top_colab.get(col, 0) + float(d.get("total_horas", 0) or 0)
+
+    total_horas = sum(horas_por_turno.values())
+    top_list = sorted(top_colab.items(), key=lambda x: -x[1])[:10]
+
+    # Build PDF
+    buf = BytesIO()
+    pdf = SimpleDocTemplate(buf, pagesize=A4, topMargin=1.5*cm, leftMargin=1.5*cm,
+                            rightMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    yellow = rl_colors.HexColor("#FFCC00")
+    red = rl_colors.HexColor("#D40511")
+    dark = rl_colors.HexColor("#0F172A")
+    story = []
+
+    # Header
+    title_style = ParagraphStyle("t", parent=styles["Title"], fontName="Helvetica-Bold",
+                                  textColor=red, fontSize=20, spaceAfter=4)
+    story.append(Paragraph("DHL — Relatório de Horas Extras", title_style))
+    story.append(Paragraph(f"<b>Período:</b> {month}", styles["Normal"]))
+    story.append(Paragraph(f"<b>Gerado em:</b> {now.strftime('%d/%m/%Y %H:%M UTC')}", styles["Normal"]))
+    story.append(Spacer(1, 0.4*cm))
+
+    # Summary table
+    summary_data = [
+        ["Total de solicitações", stats["total"]],
+        ["Aprovadas",             stats["aprovadas"]],
+        ["Rejeitadas",            stats["rejeitadas"]],
+        ["Pendentes",             stats["pendentes"]],
+        ["Canceladas",            stats["canceladas"]],
+        ["Horas extras aprovadas (total)", f"{total_horas:.2f} h"],
+    ]
+    tbl = Table(summary_data, colWidths=[9*cm, 6*cm])
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), yellow),
+        ("TEXTCOLOR", (0, 0), (-1, 0), dark),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.5, rl_colors.HexColor("#CBD5E1")),
+        ("BOX", (0, 0), (-1, -1), 1, rl_colors.HexColor("#0F172A")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [rl_colors.white, rl_colors.HexColor("#F8FAFC")]),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(tbl)
+    story.append(Spacer(1, 0.6*cm))
+
+    story.append(Paragraph("<b>Horas aprovadas por turno</b>", styles["Heading3"]))
+    turno_data = [["Turno", "Horas"]] + [[k, f"{v:.2f}"] for k, v in horas_por_turno.items()]
+    turno_tbl = Table(turno_data, colWidths=[7*cm, 5*cm])
+    turno_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), yellow),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.5, rl_colors.HexColor("#CBD5E1")),
+        ("PADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(turno_tbl)
+    story.append(Spacer(1, 0.6*cm))
+
+    if top_list:
+        story.append(Paragraph("<b>Top colaboradores (horas aprovadas)</b>", styles["Heading3"]))
+        top_data = [["Colaborador", "Horas"]] + [[k, f"{v:.2f}"] for k, v in top_list]
+        top_tbl = Table(top_data, colWidths=[10*cm, 5*cm])
+        top_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), yellow),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.5, rl_colors.HexColor("#CBD5E1")),
+            ("PADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(top_tbl)
+
+    pdf.build(story)
+    buf.seek(0)
+    filename = f"relatorio_{month}.pdf"
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 # ---------------- DHL Ponto Integration (SKELETON) ----------------
 @api.get("/integrations/ponto/status")

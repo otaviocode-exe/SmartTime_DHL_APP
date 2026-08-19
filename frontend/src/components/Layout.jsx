@@ -8,6 +8,7 @@ import {
   Settings, ScrollText, LogOut, Menu, X, MonitorSmartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/NotificationBell";
 
 const gestorNav = [
   { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gestor-dashboard" },
@@ -192,12 +193,15 @@ export default function Layout() {
               <span className="dhl-logo-mark">DHL</span>
               <span className="text-sm font-bold text-slate-900">Horas Extras</span>
             </div>
-            <div className="text-right leading-tight">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
-                {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
-              </div>
-              <div className="text-xs font-semibold text-slate-900 truncate max-w-[140px]">
-                {user?.name?.split(" ")[0]}
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <div className="text-right leading-tight">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
+                  {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
+                </div>
+                <div className="text-xs font-semibold text-slate-900 truncate max-w-[120px]">
+                  {user?.name?.split(" ")[0]}
+                </div>
               </div>
             </div>
           </div>
@@ -215,8 +219,16 @@ export default function Layout() {
               <span className="dhl-logo-mark">DHL</span>
               <span className="text-sm font-bold text-slate-900">Horas Extras</span>
             </div>
+            <NotificationBell />
           </div>
         ) : null}
+
+        {/* Desktop notification bell (top-right floating) */}
+        {isNotebook && (
+          <div className="hidden md:block absolute top-3 right-6 z-20">
+            <NotificationBell />
+          </div>
+        )}
 
         <div className={`content-wrap ${isNotebook ? "p-4 md:p-8 lg:p-10 max-w-7xl mx-auto" : isTablet ? "p-6 max-w-4xl mx-auto" : "px-4 py-4"}`}>
           <Outlet />

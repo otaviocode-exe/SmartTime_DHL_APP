@@ -51,6 +51,28 @@ export default function NovaSolicitacao() {
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
+  const lookupMatricula = async () => {
+    const m = form.matricula.trim();
+    if (!m) return;
+    try {
+      const { data } = await api.get(`/integrations/ponto/colaborador/${encodeURIComponent(m)}`);
+      // Auto-fill only empty fields to avoid overriding user edits
+      setForm((prev) => ({
+        ...prev,
+        colaborador: prev.colaborador || data.nome || "",
+        setor: prev.setor || data.setor || "",
+        turno: prev.turno === "ADM" && data.turno ? data.turno : prev.turno,
+        ...(data.turno && TURNO_HORARIOS[data.turno] ? {
+          hora_inicial: TURNO_HORARIOS[data.turno].hora_inicial,
+          hora_final: TURNO_HORARIOS[data.turno].hora_final,
+        } : {}),
+      }));
+      toast.success(`Colaborador ${data.nome} encontrado`);
+    } catch (_) {
+      // silent — matrícula desconhecida (ok, o gestor pode digitar manualmente)
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     if (totalHoras <= 0) {
@@ -98,7 +120,7 @@ export default function NovaSolicitacao() {
                 <Input required data-testid="input-colaborador" value={form.colaborador} onChange={set("colaborador")} placeholder="Ex.: João da Silva" />
               </Field>
               <Field label="Matrícula" required>
-                <Input required data-testid="input-matricula" value={form.matricula} onChange={set("matricula")} placeholder="Ex.: 12345" />
+                <Input required data-testid="input-matricula" value={form.matricula} onChange={set("matricula")} onBlur={lookupMatricula} placeholder="Ex.: 12345" />
               </Field>
               <Field label="Turno" required>
                 <Select

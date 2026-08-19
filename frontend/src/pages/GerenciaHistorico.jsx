@@ -3,7 +3,7 @@ import api from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download } from "lucide-react";
+import { Search, Download, FileText } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -47,6 +47,29 @@ export default function GerenciaHistorico() {
     }
   };
 
+  const exportPDF = async () => {
+    setExporting(true);
+    try {
+      const month = new Date().toISOString().slice(0, 7);
+      const url = `${API}/reports/monthly.pdf?month=${month}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Falha ao gerar PDF");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `relatorio_${month}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+      toast.success("Relatório PDF gerado com sucesso");
+    } catch (e) {
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   useEffect(() => {
     api.get("/requests").then((r) => setItems(r.data)).catch(() => {});
   }, []);
@@ -79,15 +102,27 @@ export default function GerenciaHistorico() {
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">Histórico de Solicitações</h1>
           <p className="text-slate-500 mt-1">Todas as solicitações registradas no sistema.</p>
         </div>
-        <Button
-          onClick={exportExcel}
-          disabled={exporting}
-          data-testid="export-excel-btn"
-          className="btn-accent rounded-md font-semibold"
-        >
-          <Download size={18} className="mr-2" />
-          {exporting ? "Gerando..." : "Exportar Excel"}
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            onClick={exportPDF}
+            disabled={exporting}
+            data-testid="export-pdf-btn"
+            variant="outline"
+            className="rounded-md font-semibold border-[#D40511] text-[#D40511] hover:bg-[#FEE2E2]"
+          >
+            <FileText size={18} className="mr-2" />
+            {exporting ? "Gerando..." : "Relatório PDF"}
+          </Button>
+          <Button
+            onClick={exportExcel}
+            disabled={exporting}
+            data-testid="export-excel-btn"
+            className="btn-accent rounded-md font-semibold"
+          >
+            <Download size={18} className="mr-2" />
+            {exporting ? "Gerando..." : "Exportar Excel"}
+          </Button>
+        </div>
       </div>
 
       <Card className="border-slate-200 shadow-sm">

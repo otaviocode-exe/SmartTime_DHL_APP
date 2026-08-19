@@ -9,13 +9,18 @@ import StatusBadge from "@/components/StatusBadge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
-import { Check, X, Inbox } from "lucide-react";
+import { Check, X, Inbox, CheckCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Aprovacoes() {
   const [pending, setPending] = useState([]);
   const [selected, setSelected] = useState(null);
   const [obs, setObs] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null); // 'approve' | 'reject'
+  const [bulkObs, setBulkObs] = useState("");
 
   const load = () =>
     api.get("/requests", { params: { status: "Pendente" } })
@@ -25,6 +30,47 @@ export default function Aprovacoes() {
   useEffect(() => { load(); }, []);
 
   const openReview = (r) => { setSelected(r); setObs(""); };
+
+  const toggleSel = (id) => {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === pending.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(pending.map((r) => r.id)));
+  };
+
+  const openBulk = (action) => {
+    setBulkAction(action);
+    setBulkObs("");
+    setBulkOpen(true);
+  };
+
+  const runBulk = async () => {
+    if (selectedIds.size === 0) return;
+    setBusy(true);
+    try {
+      const url = bulkAction === "approve" ? "/requests/bulk-approve" : "/requests/bulk-reject";
+      const { data } = await api.post(url, {
+        request_ids: Array.from(selectedIds),
+        observacoes_gerencia: bulkObs,
+      });
+      const okCount = (data.approved || data.rejected || []).length;
+      const failedCount = (data.failed || []).length;
+      toast.success(`${okCount} processada(s)${failedCount ? ` · ${failedCount} falhou` : ""}`);
+      setSelectedIds(new Set());
+      setBulkOpen(false);
+      load();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro no processamento em lote");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const decide = async (action) => {
     if (!selected) return;
@@ -51,6 +97,42 @@ export default function Aprovacoes() {
         <p className="text-slate-500 mt-1">Analise, aprove ou rejeite as solicitações abaixo.</p>
       </div>
 
+      {pending.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={selectedIds.size > 0 && selectedIds.size === pending.length}
+              onCheckedChange={selectAll}
+              data-testid="select-all-checkbox"
+            />
+            <span className="text-sm text-slate-700">
+              {selectedIds.size === 0
+                ? "Selecionar todas"
+                : `${selectedIds.size} selecionada${selectedIds.size > 1 ? "s" : ""}`}
+            </span>
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => openBulk("reject")}
+                data-testid="bulk-reject-btn"
+                className="border-[#D40511] text-[#D40511] hover:bg-[#FEE2E2]"
+              >
+                <X size={16} className="mr-1" /> Rejeitar {selectedIds.size}
+              </Button>
+              <Button
+                onClick={() => openBulk("approve")}
+                data-testid="bulk-approve-btn"
+                className="btn-accent font-semibold"
+              >
+                <CheckCheck size={16} className="mr-1" /> Aprovar {selectedIds.size}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {pending.length === 0 ? (
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-12 flex flex-col items-center text-center text-slate-500">
@@ -65,10 +147,18 @@ export default function Aprovacoes() {
             <Card key={r.id} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow" data-testid={`pending-card-${r.id}`}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[10px] text-slate-500">{r.numero}</div>
-                    <div className="font-heading text-xl font-bold text-slate-900 mt-1">{r.colaborador}</div>
-                    <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Turno: {r.turno || "—"} · Setor: {r.setor || "—"}</div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Checkbox
+                      checked={selectedIds.has(r.id)}
+                      onCheckedChange={() => toggleSel(r.id)}
+                      data-testid={`select-${r.id}`}
+                      className="mt-1"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-mono text-[10px] text-slate-500">{r.numero}</div>
+                      <div className="font-heading text-xl font-bold text-slate-900 mt-1">{r.colaborador}</div>
+                      <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Turno: {r.turno || "—"} · Setor: {r.setor || "—"}</div>
+                    </div>
                   </div>
                   <StatusBadge status={r.status} />
                 </div>
@@ -168,6 +258,45 @@ export default function Aprovacoes() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk decision dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent data-testid="bulk-dialog">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-2xl">
+              {bulkAction === "approve" ? "Aprovar em lote" : "Rejeitar em lote"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedIds.size} solicitação(ões) serão{" "}
+              <b>{bulkAction === "approve" ? "aprovadas" : "rejeitadas"}</b> de uma só vez.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
+            <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">
+              Observação (aplicada a todas)
+            </Label>
+            <Textarea
+              value={bulkObs}
+              onChange={(e) => setBulkObs(e.target.value)}
+              rows={3}
+              className="mt-1.5"
+              placeholder="Opcional..."
+              data-testid="bulk-obs"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={runBulk}
+              disabled={busy}
+              data-testid="bulk-confirm"
+              className={bulkAction === "approve" ? "btn-accent font-semibold" : "btn-primary font-semibold"}
+            >
+              {busy ? "Processando..." : bulkAction === "approve" ? "Confirmar aprovação" : "Confirmar rejeição"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
