@@ -45,8 +45,39 @@ export default function NovaSolicitacao() {
   });
   const [busy, setBusy] = useState(false);
   const [pendingFiles, setPendingFiles] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSug, setShowSug] = useState(false);
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
+  const sugTimerRef = useRef(null);
+
+  const searchColab = (text) => {
+    clearTimeout(sugTimerRef.current);
+    if (!text || text.length < 2) { setSuggestions([]); return; }
+    sugTimerRef.current = setTimeout(async () => {
+      try {
+        const { data } = await api.get(`/colaboradores/search?q=${encodeURIComponent(text)}`);
+        setSuggestions(data || []);
+      } catch { setSuggestions([]); }
+    }, 250);
+  };
+
+  const applyColab = (c) => {
+    setForm((prev) => ({
+      ...prev,
+      matricula: c.matricula || prev.matricula,
+      colaborador: c.nome || prev.colaborador,
+      setor: c.setor || prev.setor,
+      turno: c.turno || prev.turno,
+      ...(c.turno && TURNO_HORARIOS[c.turno] ? {
+        hora_inicial: TURNO_HORARIOS[c.turno].hora_inicial,
+        hora_final: TURNO_HORARIOS[c.turno].hora_final,
+      } : {}),
+    }));
+    setSuggestions([]);
+    setShowSug(false);
+    toast.success(`Colaborador ${c.nome} selecionado`);
+  };
 
   const addFiles = (list) => {
     const arr = Array.from(list || []);
@@ -157,10 +188,41 @@ export default function NovaSolicitacao() {
           <form onSubmit={submit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Nome do Colaborador" required>
-                <Input required data-testid="input-colaborador" value={form.colaborador} onChange={set("colaborador")} placeholder="Ex.: João da Silva" />
+                <div className="relative">
+                  <Input
+                    required
+                    data-testid="input-colaborador"
+                    value={form.colaborador}
+                    onChange={(e) => { set("colaborador")(e); searchColab(e.target.value); setShowSug(true); }}
+                    onFocus={() => setShowSug(true)}
+                    onBlur={() => setTimeout(() => setShowSug(false), 200)}
+                    placeholder="Digite nome ou clique em Matrícula →"
+                    autoComplete="off"
+                  />
+                  {showSug && suggestions.length > 0 && (
+                    <ul
+                      data-testid="colab-suggestions"
+                      className="absolute z-30 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg max-h-64 overflow-y-auto"
+                    >
+                      {suggestions.map((c) => (
+                        <li
+                          key={c.matricula}
+                          onMouseDown={(e) => { e.preventDefault(); applyColab(c); }}
+                          className="px-3 py-2 hover:bg-[#FFCC00]/20 cursor-pointer border-b border-slate-100 last:border-0"
+                          data-testid={`suggestion-${c.matricula}`}
+                        >
+                          <div className="text-sm font-semibold text-slate-900">{c.nome}</div>
+                          <div className="text-[10px] text-slate-500">
+                            Matrícula {c.matricula} · {c.setor || "—"} · Turno {c.turno}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </Field>
               <Field label="Matrícula" required>
-                <Input required data-testid="input-matricula" value={form.matricula} onChange={set("matricula")} onBlur={lookupMatricula} placeholder="Ex.: 12345" />
+                <Input required data-testid="input-matricula" value={form.matricula} onChange={(e) => { set("matricula")(e); searchColab(e.target.value); setShowSug(true); }} onBlur={lookupMatricula} placeholder="Ex.: 9817876" />
               </Field>
               <Field label="Turno" required>
                 <Select

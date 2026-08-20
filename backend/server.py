@@ -25,6 +25,7 @@ from integrations.dhl_ponto import get_ponto_adapter
 from integrations.storage import init_storage, put_object, get_object, APP_NAME as STORAGE_APP
 from integrations.ai_classifier import classify_motivo
 from integrations.push import public_key as vapid_public_key, send_push
+from integrations import colaboradores_db as colab_db
 
 from fastapi import UploadFile, File
 
@@ -832,12 +833,39 @@ async def ponto_status(_u: dict = Depends(get_current_user)):
 
 @api.get("/integrations/ponto/colaborador/{matricula}")
 async def ponto_colaborador(matricula: str, _u: dict = Depends(get_current_user)):
-    """Autocomplete de dados do colaborador via sistema de Ponto DHL."""
+    """Busca dados do colaborador. 1) Excel DHL local  2) Adapter Ponto (mock/real)."""
+    # Prefer local Excel DB
+    rec = colab_db.find_by_matricula(matricula)
+    if rec:
+        return {
+            "matricula": rec["matricula"],
+            "nome": rec["nome"],
+            "setor": rec["setor"],
+            "centro_custo": "",
+            "turno": rec["turno"],
+            "gestor_matricula": "",
+            "ativo": True,
+            "turma": rec["turma"],
+            "turma_hora_inicial": rec["turma_hora_inicial"],
+            "turma_hora_final": rec["turma_hora_final"],
+        }
     adapter = get_ponto_adapter()
     col = await adapter.buscar_colaborador(matricula)
     if not col:
-        raise HTTPException(404, "Colaborador não encontrado no Ponto")
+        raise HTTPException(404, "Colaborador não encontrado")
     return col.to_dict()
+
+@api.get("/colaboradores/search")
+async def colaboradores_search(q: str, _u: dict = Depends(get_current_user)):
+    """Busca fuzzy por nome ou matrícula. Retorna até 10 resultados."""
+    return colab_db.search(q)
+
+@api.post("/colaboradores/reload")
+async def colaboradores_reload(user: dict = Depends(require_role("gerencia", "admin"))):
+    """Recarrega o Excel /app/backend/data/colaboradores.xlsx após atualização."""
+    n = colab_db.load_from_excel()
+    await _audit(user, "RELOAD_COLABORADORES", "colaboradores", "", f"total={n}")
+    return {"loaded": n}
 
 # ---------------- Health ----------------
 @api.get("/")
@@ -891,6 +919,11 @@ async def on_startup():
         init_storage()
     except Exception as e:
         logger.warning(f"Storage init at startup: {e}")
+
+    try:
+        colab_db.load_from_excel()
+    except Exception as e:
+        logger.warning(f"Colaboradores DB load failed: {e}")
 
     await seed_user(os.environ["ADMIN_EMAIL"], os.environ["ADMIN_PASSWORD"],
                     "Administrador DHL", "admin", "TI", "ADM001")
