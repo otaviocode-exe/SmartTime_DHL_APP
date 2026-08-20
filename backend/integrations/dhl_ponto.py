@@ -3,7 +3,7 @@ DHL Ponto Integration — SKELETON / STUB
 ========================================
 
 Este módulo contém o ESQUELETO da integração com o sistema de Ponto da DHL.
-Foi criado pela E1 (Emergent) com base no PRD do Sistema de Aprovação de Horas Extras.
+Foi criado pelo OtavioAppDHL com base no PRD do Sistema de Aprovação de Horas Extras.
 DEVE SER COMPLETADO PELO TIME DE TI DA DHL com as credenciais e endpoints reais.
 
 O que ESTE MÓDULO FAZ hoje:
@@ -45,7 +45,7 @@ FLUXO IDEAL (a implementar quando integrar):
     3) Se a chamada falhar, marcar a solicitação como "Aprovada (pendente ponto)"
        para retry manual ou automático (fila).
 
-CONTATO ORIGINAL: Este skeleton foi gerado pela IDE Emergent (E1).
+CONTATO ORIGINAL: Este skeleton foi gerado pelo OtavioAppDHL.
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# DHL Horas Extras — Bloco de Integrações
+# OtavioAppDHL — Bloco de Integrações
 
 Esta pasta contém os módulos de integração com sistemas externos da DHL.
 

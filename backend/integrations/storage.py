@@ -1,4 +1,4 @@
-"""Emergent Object Storage helper (used for HE request attachments)."""
+"""OtavioAppDHL Object Storage helper (used for HE request attachments)."""
 import os
 import logging
 import requests

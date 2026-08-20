@@ -1,4 +1,4 @@
-"""AI classification of overtime request motivo using Emergent LLM key."""
+"""AI classification of overtime request motivo — OtavioAppDHL (via LLM key)."""
 import os
 import re
 import logging

@@ -1,7 +1,7 @@
 {
-  "name": "DHL Horas Extras",
-  "short_name": "DHL HE",
-  "description": "Sistema de Aprovação de Horas Extras DHL",
+  "name": "OtavioAppDHL — Horas Extras",
+  "short_name": "OtavioAppDHL",
+  "description": "OtavioAppDHL — Sistema de Aprovação de Horas Extras DHL",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
