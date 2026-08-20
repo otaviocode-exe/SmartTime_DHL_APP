@@ -58,7 +58,6 @@ function App() {
                   <Route index element={<GestorDashboard />} />
                   <Route path="nova" element={<NovaSolicitacao />} />
                   <Route path="minhas" element={<MinhasSolicitacoes />} />
-                  <Route path="anexos" element={<GestorAnexos />} />
                   <Route path="configuracoes" element={<Configuracoes />} />
                 </Route>
 
