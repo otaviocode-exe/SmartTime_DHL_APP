@@ -38,7 +38,7 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-app = FastAPI(title="OtavioAppDHL — Horas Extras API")
+app = FastAPI(title="DHL — Horas Extras API")
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -870,7 +870,7 @@ async def colaboradores_reload(user: dict = Depends(require_role("gerencia", "ad
 # ---------------- Health ----------------
 @api.get("/")
 async def root():
-    return {"service": "OtavioAppDHL — Horas Extras", "status": "ok"}
+    return {"service": "DHL — Horas Extras", "status": "ok"}
 
 # ---------------- Register router + CORS ----------------
 app.include_router(api)
