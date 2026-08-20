@@ -10,6 +10,7 @@ import DeviceSelector from "@/pages/DeviceSelector";
 import GestorDashboard from "@/pages/GestorDashboard";
 import NovaSolicitacao from "@/pages/NovaSolicitacao";
 import MinhasSolicitacoes from "@/pages/MinhasSolicitacoes";
+import GestorAnexos from "@/pages/GestorAnexos";
 import GerenciaDashboard from "@/pages/GerenciaDashboard";
 import Aprovacoes from "@/pages/Aprovacoes";
 import GerenciaHistorico from "@/pages/GerenciaHistorico";
@@ -57,6 +58,7 @@ function App() {
                   <Route index element={<GestorDashboard />} />
                   <Route path="nova" element={<NovaSolicitacao />} />
                   <Route path="minhas" element={<MinhasSolicitacoes />} />
+                  <Route path="anexos" element={<GestorAnexos />} />
                   <Route path="configuracoes" element={<Configuracoes />} />
                 </Route>
 

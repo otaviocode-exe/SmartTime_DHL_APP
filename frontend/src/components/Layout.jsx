@@ -5,7 +5,7 @@ import { useDevice } from "@/context/DeviceContext";
 import api from "@/lib/api";
 import {
   LayoutDashboard, FilePlus2, ListTodo, ClipboardList, Users, History,
-  Settings, ScrollText, LogOut, Menu, X, MonitorSmartphone,
+  Settings, ScrollText, LogOut, Menu, X, MonitorSmartphone, Paperclip,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
@@ -14,6 +14,7 @@ const gestorNav = [
   { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gestor-dashboard" },
   { to: "/gestor/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
   { to: "/gestor/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
+  { to: "/gestor/anexos", icon: Paperclip, label: "Anexos", short: "Anexos", testid: "nav-anexos" },
   { to: "/gestor/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes-gestor" },
 ];
 

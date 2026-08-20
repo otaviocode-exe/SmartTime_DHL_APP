@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { formatApiErrorDetail } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Save, ArrowLeft } from "lucide-react";
+import {
+  Save, ArrowLeft, Camera, Upload, X, Image as ImageIcon, FileText, Paperclip,
+} from "lucide-react";
 
 function calcHoras(hi, hf) {
   if (!hi || !hf) return 0;
@@ -42,6 +44,29 @@ export default function NovaSolicitacao() {
     observacoes: "",
   });
   const [busy, setBusy] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
+
+  const addFiles = (list) => {
+    const arr = Array.from(list || []);
+    const valid = [];
+    for (const f of arr) {
+      if (f.size > 10 * 1024 * 1024) {
+        toast.error(`${f.name}: maior que 10MB`);
+        continue;
+      }
+      const ext = f.name.split(".").pop()?.toLowerCase();
+      if (!["pdf", "png", "jpg", "jpeg", "webp"].includes(ext)) {
+        toast.error(`${f.name}: formato não aceito`);
+        continue;
+      }
+      valid.push(f);
+    }
+    if (valid.length) setPendingFiles((prev) => [...prev, ...valid]);
+  };
+
+  const removeFile = (idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
 
   const totalHoras = useMemo(
     () => calcHoras(form.hora_inicial, form.hora_final),
@@ -85,7 +110,22 @@ export default function NovaSolicitacao() {
     }
     setBusy(true);
     try {
-      await api.post("/requests", { ...form, total_horas: totalHoras });
+      const { data } = await api.post("/requests", { ...form, total_horas: totalHoras });
+      // Upload attachments if any
+      if (pendingFiles.length > 0) {
+        toast.info(`Enviando ${pendingFiles.length} anexo(s)...`);
+        for (const f of pendingFiles) {
+          const fd = new FormData();
+          fd.append("file", f);
+          try {
+            await api.post(`/requests/${data.id}/attachments`, fd, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+          } catch (err) {
+            toast.error(`Falha ao anexar ${f.name}`);
+          }
+        }
+      }
       toast.success("Solicitação enviada com sucesso!");
       navigate("/gestor/minhas");
     } catch (e) {
@@ -217,6 +257,84 @@ export default function NovaSolicitacao() {
                 placeholder="Informações adicionais (opcional)"
               />
             </Field>
+
+            {/* --- Anexos / Comprovantes --- */}
+            <div className="border-t border-slate-100 pt-5">
+              <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500 flex items-center gap-1">
+                <Paperclip size={12} /> Anexos (opcional)
+              </Label>
+              <p className="text-xs text-slate-500 mt-1">
+                Adicione fotos, PDFs ou comprovantes para <b>ajudar a justificar as horas extras</b>.
+                Formatos: PDF, PNG, JPG, WEBP · até 10MB por arquivo.
+              </p>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.webp,image/*"
+                hidden
+                multiple
+                onChange={(e) => addFiles(e.target.files)}
+                data-testid="nova-file-input"
+              />
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                hidden
+                onChange={(e) => addFiles(e.target.files)}
+                data-testid="nova-camera-input"
+              />
+
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cameraRef.current?.click()}
+                  data-testid="nova-camera-btn"
+                >
+                  <Camera size={16} className="mr-2" /> Tirar Foto
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  data-testid="nova-upload-btn"
+                >
+                  <Upload size={16} className="mr-2" /> Escolher Arquivo
+                </Button>
+              </div>
+
+              {pendingFiles.length > 0 && (
+                <ul className="mt-3 space-y-2" data-testid="pending-files-list">
+                  {pendingFiles.map((f, idx) => {
+                    const isImage = f.type.startsWith("image/");
+                    return (
+                      <li
+                        key={idx}
+                        className="flex items-center gap-2 p-2 rounded-md bg-slate-50 border border-slate-200"
+                      >
+                        {isImage ? <ImageIcon size={16} className="text-slate-500" /> : <FileText size={16} className="text-slate-500" />}
+                        <span className="text-sm text-slate-800 flex-1 truncate">{f.name}</span>
+                        <span className="text-[10px] text-slate-400">{(f.size / 1024).toFixed(0)} KB</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(idx)}
+                          className="text-slate-400 hover:text-[#D40511] p-1"
+                          aria-label="Remover"
+                          data-testid={`remove-file-${idx}`}
+                        >
+                          <X size={14} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
 
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-slate-100">
               <Button type="button" variant="outline" onClick={() => navigate(-1)} data-testid="cancel-btn">

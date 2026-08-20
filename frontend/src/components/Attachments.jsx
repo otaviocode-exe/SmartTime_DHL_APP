@@ -1,13 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import api, { API, formatApiErrorDetail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Upload, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Paperclip, Upload, FileText, Image as ImageIcon, Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 
-export default function Attachments({ requestId, readOnly = false }) {
+export default function Attachments({ requestId, readOnly = false, showCamera = false }) {
   const [items, setItems] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
 
   const load = () => {
     if (!requestId) return;
@@ -25,13 +26,14 @@ export default function Attachments({ requestId, readOnly = false }) {
       await api.post(`/requests/${requestId}/attachments`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.success("Anexo enviado");
+      toast.success("Anexo enviado com sucesso");
       load();
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Erro no upload");
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
     }
   };
 
@@ -55,33 +57,55 @@ export default function Attachments({ requestId, readOnly = false }) {
 
   return (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div className="uppercase tracking-[0.1em] text-[10px] font-bold text-slate-500 flex items-center gap-1">
           <Paperclip size={12} /> Anexos ({items.length})
         </div>
         {!readOnly && (
-          <>
+          <div className="flex gap-2">
             <input
-              ref={inputRef}
+              ref={fileRef}
               type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,image/*"
               hidden
               onChange={upload}
               data-testid="attachment-input"
             />
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={upload}
+              data-testid="camera-input"
+            />
+            {showCamera && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => cameraRef.current?.click()}
+                disabled={uploading}
+                data-testid="camera-btn"
+                className="h-8 text-xs"
+              >
+                <Camera size={14} className="mr-1" /> Foto
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => inputRef.current?.click()}
+              onClick={() => fileRef.current?.click()}
               disabled={uploading}
               data-testid="upload-attachment-btn"
-              className="h-7 text-xs"
+              className="h-8 text-xs"
             >
               {uploading ? <Loader2 size={12} className="animate-spin mr-1" /> : <Upload size={12} className="mr-1" />}
-              Anexar
+              {showCamera ? "Galeria" : "Anexar"}
             </Button>
-          </>
+          </div>
         )}
       </div>
       {items.length === 0 ? (
