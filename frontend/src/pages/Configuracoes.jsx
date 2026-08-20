@@ -12,12 +12,13 @@ import {
 import { toast } from "sonner";
 import {
   Infinity as InfinityIcon, Timer, Hand, Trash2, ShieldAlert,
-  CheckCircle2, Loader2, AlertTriangle, Sun, Moon, Smartphone, Tablet, Laptop, LogOut,
+  CheckCircle2, Loader2, AlertTriangle, Sun, Moon, Smartphone, Tablet, Laptop, LogOut, Bell,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useDevice } from "@/context/DeviceContext";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import PushToggle from "@/components/PushToggle";
 
 const OPTIONS = [
   {
@@ -395,6 +396,22 @@ export default function Configuracoes() {
       </Card>
 
       {/* --- CONTA / SAIR --- */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-6 md:p-8">
+          <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500 mb-1 flex items-center gap-2">
+            <Bell size={12} /> Notificações
+          </div>
+          <h3 className="font-heading text-xl font-bold text-slate-900 mt-1">
+            Push notifications
+          </h3>
+          <p className="text-sm text-slate-500 mt-1 mb-4">
+            Receba notificações no dispositivo (mesmo com o app fechado) sempre que uma
+            solicitação for aprovada, rejeitada ou aguardando sua decisão.
+          </p>
+          <PushToggle />
+        </CardContent>
+      </Card>
+
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

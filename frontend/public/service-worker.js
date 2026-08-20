@@ -1,5 +1,5 @@
 /* DHL Horas Extras — Service Worker (network-first, offline fallback) */
-const CACHE_VERSION = "dhl-he-v1";
+const CACHE_VERSION = "dhl-he-v2";
 const OFFLINE_SHELL = ["/", "/index.html", "/manifest.json", "/favicon.ico",
   "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
 
@@ -38,5 +38,33 @@ self.addEventListener("fetch", (event) => {
         return res;
       })
       .catch(() => caches.match(req).then((m) => m || caches.match("/index.html")))
+  );
+});
+
+// -------- Web Push handlers --------
+self.addEventListener("push", (event) => {
+  let data = { title: "DHL Horas Extras", body: "Você tem uma nova notificação", url: "/" };
+  try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url },
+      vibrate: [100, 50, 100],
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      for (const c of clients) {
+        if ("focus" in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
   );
 });

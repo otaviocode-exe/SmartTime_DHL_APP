@@ -24,6 +24,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from integrations.dhl_ponto import get_ponto_adapter
 from integrations.storage import init_storage, put_object, get_object, APP_NAME as STORAGE_APP
 from integrations.ai_classifier import classify_motivo
+from integrations.push import public_key as vapid_public_key, send_push
 
 from fastapi import UploadFile, File
 
@@ -569,6 +570,39 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
         {"$set": {"read": True}},
     )
     return {"updated": res.modified_count}
+
+# ---------------- Push Notifications (VAPID) ----------------
+class PushSubIn(BaseModel):
+    subscription: dict
+
+@api.get("/push/vapid-public")
+async def push_vapid(_u: dict = Depends(get_current_user)):
+    return {"public_key": vapid_public_key()}
+
+@api.post("/push/subscribe")
+async def push_subscribe(body: PushSubIn, user: dict = Depends(get_current_user)):
+    endpoint = body.subscription.get("endpoint", "")
+    if not endpoint:
+        raise HTTPException(400, "Invalid subscription")
+    await db.push_subscriptions.update_one(
+        {"endpoint": endpoint},
+        {"$set": {
+            "endpoint": endpoint,
+            "user_id": user["id"],
+            "subscription": body.subscription,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+    return {"ok": True}
+
+@api.post("/push/unsubscribe")
+async def push_unsubscribe(body: PushSubIn, user: dict = Depends(get_current_user)):
+    await db.push_subscriptions.delete_many({
+        "endpoint": body.subscription.get("endpoint", ""),
+        "user_id": user["id"],
+    })
+    return {"ok": True}
 
 # ---------------- Attachments (Object Storage) ----------------
 MAX_ATTACHMENT_MB = 10
