@@ -19,6 +19,8 @@ export default function GerenciaHistorico() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [turnoFilter, setTurnoFilter] = useState("all");
   const [gestorFilter, setGestorFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selected, setSelected] = useState(null);
   const [exporting, setExporting] = useState(false);
 

@@ -47,3 +47,6 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
 - Auditoria de alterações (event log)
 - Integração AD/Entra ID (SSO corporativo)
 - App mobile (React Native / Flutter)
+
+## Atualização (Jun/2026)
+- Criado /app/APRESENTACAO.md: documento único de apresentação do projeto (arquitetura, IA, hospedagem, status)
