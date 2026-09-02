@@ -12,8 +12,12 @@ import {
 import Attachments from "@/components/Attachments";
 import { Check, X, Inbox, CheckCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/context/AuthContext";
+import { setorLabel } from "@/lib/format";
 
 export default function Aprovacoes() {
+  const { user } = useAuth();
+  const isSupervisor = user?.role === "supervisor";
   const [pending, setPending] = useState([]);
   const [selected, setSelected] = useState(null);
   const [obs, setObs] = useState("");
@@ -24,7 +28,7 @@ export default function Aprovacoes() {
   const [bulkObs, setBulkObs] = useState("");
 
   const load = () =>
-    api.get("/requests", { params: { status: "Pendente" } })
+    api.get("/requests", { params: { pending: 1 } })
       .then((r) => setPending(r.data))
       .catch(() => {});
 
@@ -91,11 +95,17 @@ export default function Aprovacoes() {
   return (
     <div className="space-y-6 fade-in-up">
       <div>
-        <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">Fila de Aprovação</div>
+        <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">
+          {isSupervisor ? "Etapa 1 · Avaliação do Supervisor" : "Etapa Final · OK da Gerência"}
+        </div>
         <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">
           Solicitações Pendentes
         </h1>
-        <p className="text-slate-500 mt-1">Analise, aprove ou rejeite as solicitações abaixo.</p>
+        <p className="text-slate-500 mt-1">
+          {isSupervisor
+            ? "Ao aceitar, a solicitação segue para o OK geral da Gerência. Ao rejeitar, o coordenador só poderá refazer após 24h."
+            : "Analise e dê o OK final. Ao rejeitar, uma nova solicitação para o colaborador só será permitida após 24h."}
+        </p>
       </div>
 
       {pending.length > 0 && (
@@ -158,7 +168,7 @@ export default function Aprovacoes() {
                     <div className="min-w-0">
                       <div className="font-mono text-[10px] text-slate-500">{r.numero}</div>
                       <div className="font-heading text-xl font-bold text-slate-900 mt-1">{r.colaborador}</div>
-                      <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Turno: {r.turno || "—"} · Setor: {r.setor || "—"}</div>
+                      <div className="text-sm text-slate-500">Matrícula: {r.matricula} · Turno: {r.turno || "—"} · Setor: {setorLabel(r.setor)}</div>
                     </div>
                   </div>
                   <StatusBadge status={r.status} />
@@ -177,6 +187,9 @@ export default function Aprovacoes() {
 
                 <div className="mt-4 text-xs text-slate-500">
                   Solicitado por <span className="font-semibold text-slate-700">{r.gestor_nome}</span>
+                  {r.gestor_role && <> ({r.gestor_role === "supervisor" ? "Supervisor" : "Coordenador"})</>}
+                  {r.area && <> · Área <span className="font-semibold">{r.area}</span></>}
+                  {r.supervisor_nome && <> · Aceito por <span className="font-semibold text-slate-700">{r.supervisor_nome}</span></>}
                 </div>
 
                 <div className="mt-5 flex gap-2">
@@ -211,12 +224,14 @@ export default function Aprovacoes() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <Info label="Colaborador" value={selected.colaborador} />
                 <Info label="Matrícula" value={selected.matricula} />
-                <Info label="Setor" value={selected.setor || "—"} />
+                <Info label="Setor" value={setorLabel(selected.setor)} />
                 <Info label="Turno" value={selected.turno || "—"} />
                 <Info label="Data" value={selected.data} />
                 <Info label="Horário" value={`${selected.hora_inicial} — ${selected.hora_final}`} />
                 <Info label="Total de Horas" value={`${selected.total_horas}h`} />
-                <Info label="Gestor Solicitante" value={selected.gestor_nome} />
+                <Info label="Solicitante" value={selected.gestor_nome} />
+                <Info label="Área" value={selected.area || "—"} />
+                {selected.supervisor_nome && <Info label="Supervisor (Etapa 1)" value={selected.supervisor_nome} />}
               </div>
 
               <div className="mt-2">
@@ -232,7 +247,7 @@ export default function Aprovacoes() {
 
               <div className="mt-4">
                 <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">
-                  Observações da Gerência (opcional)
+                  {isSupervisor ? "Observações do Supervisor (opcional)" : "Observações da Gerência (opcional)"}
                 </Label>
                 <Textarea
                   value={obs}
@@ -260,7 +275,7 @@ export default function Aprovacoes() {
                   data-testid="approve-btn"
                   className="btn-accent rounded-md font-semibold"
                 >
-                  <Check size={18} className="mr-1" /> Aprovar
+                  <Check size={18} className="mr-1" /> {isSupervisor ? "Aceitar → Gerência" : "Aprovar"}
                 </Button>
               </DialogFooter>
             </>

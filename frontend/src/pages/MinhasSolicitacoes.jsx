@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
-import api, { formatApiErrorDetail } from "@/lib/api";
+import api, { formatApiErrorDetail, API } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { FilePlus2, Search, Ban } from "lucide-react";
+import { FilePlus2, Search, Ban, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import StatusBadge from "@/components/StatusBadge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import Attachments from "@/components/Attachments";
+import { useAuth } from "@/context/AuthContext";
+import { homePathFor } from "@/lib/roles";
+import { setorLabel } from "@/lib/format";
 
 export default function MinhasSolicitacoes() {
+  const { user } = useAuth();
+  const basePath = homePathFor(user?.role);
   const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(null);
@@ -46,7 +51,7 @@ export default function MinhasSolicitacoes() {
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">Minhas Solicitações</h1>
           <p className="text-slate-500 mt-1">Consulte todas as solicitações enviadas por você.</p>
         </div>
-        <Link to="/gestor/nova">
+        <Link to={`${basePath}/nova`}>
           <Button data-testid="new-request-btn-2" className="btn-primary rounded-md font-semibold">
             <FilePlus2 size={18} className="mr-2" /> Nova
           </Button>
@@ -103,7 +108,7 @@ export default function MinhasSolicitacoes() {
                     <TableCell><StatusBadge status={r.status} /></TableCell>
                     <TableCell className="text-slate-600">{r.gerente_nome || "—"}</TableCell>
                     <TableCell className="text-right">
-                      {r.status === "Pendente" && (
+                      {r.status?.startsWith("Pendente") && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -130,6 +135,30 @@ export default function MinhasSolicitacoes() {
 
 export function RequestDetailDialog({ request, onClose }) {
   const open = !!request;
+  const [downloading, setDownloading] = useState(false);
+  const canDownload = !!request && !request.status?.startsWith("Pendente");
+
+  const downloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`${API}/requests/${request.id}/pdf`, { credentials: "include" });
+      if (!res.ok) throw new Error("Falha");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `comprovante_${request.numero}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+      toast.success("Comprovante PDF gerado");
+    } catch {
+      toast.error("Erro ao gerar comprovante");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl" data-testid="request-detail-dialog">
@@ -144,12 +173,13 @@ export function RequestDetailDialog({ request, onClose }) {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <Info label="Matrícula" value={request.matricula} />
               <Info label="Turno" value={request.turno || "—"} />
-              <Info label="Setor" value={request.setor || "—"} />
+              <Info label="Setor" value={setorLabel(request.setor)} />
               <Info label="Data" value={request.data} />
               <Info label="Horário" value={`${request.hora_inicial} — ${request.hora_final}`} />
               <Info label="Total de horas" value={`${request.total_horas}h`} />
-              <Info label="Gestor" value={request.gestor_nome} />
-              <Info label="Gerente" value={request.gerente_nome || "—"} />
+              <Info label="Solicitante" value={request.gestor_nome} />
+              <Info label="Aprovação Supervisor" value={request.supervisor_nome || "—"} />
+              <Info label="Aprovação Gerência" value={request.gerente_nome || "—"} />
             </div>
             <div className="mt-2">
               <Info label="Motivo" value={request.motivo} block />
@@ -165,8 +195,22 @@ export function RequestDetailDialog({ request, onClose }) {
               {request.data_aprovacao && (
                 <Info label="Data da Decisão" value={new Date(request.data_aprovacao).toLocaleString("pt-BR")} block />
               )}
-              <Attachments requestId={request.id} readOnly={request.status !== "Pendente"} />
+              <Attachments requestId={request.id} readOnly={!request.status?.startsWith("Pendente")} />
             </div>
+            {canDownload && (
+              <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end">
+                <Button
+                  onClick={downloadPDF}
+                  disabled={downloading}
+                  data-testid="download-request-pdf-btn"
+                  variant="outline"
+                  className="rounded-md font-semibold border-[#D40511] text-[#D40511] hover:bg-[#FEE2E2]"
+                >
+                  <FileDown size={18} className="mr-2" />
+                  {downloading ? "Gerando..." : "Baixar comprovante PDF"}
+                </Button>
+              </div>
+            )}
           </>
         )}
       </DialogContent>

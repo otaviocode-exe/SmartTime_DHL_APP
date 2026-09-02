@@ -50,3 +50,9 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
 
 ## Atualização (Jun/2026)
 - Criado /app/APRESENTACAO.md: documento único de apresentação do projeto (arquitetura, IA, hospedagem, status)
+
+## Atualização Visual (Jun/2026) — Redesign a pedido do usuário
+- Novo componente `/app/frontend/src/components/DhlLogo.jsx`: logotipo DHL recriado em SVG limpo (vermelho, itálico, com as 3 linhas de velocidade). Sem imagens de IA.
+- Barra lateral (`Layout.jsx`) redesenhada: card branco flutuante (rounded-2xl), caixa amarela DHL no topo, itens com ícone centralizado + rótulo abaixo, item ativo com destaque cinza claro, badge vermelho de pendências, rodapé com usuário + Sair (sem seletor de idioma, por escolha do usuário).
+- Tela de login (`Login.jsx`) redesenhada em 2 painéis: esquerda amarela DHL limpa (apenas logo, sem texto/ilustração); direita branca com pílula "Português", relógio SmartTime, divisor "GESTÃO DE HORAS EXTRAS", seletor de área minimalista (segmentado I2M/PKCG), campos com ícones, mostrar/ocultar senha, "Esqueceu sua senha?", botão Entrar, SSO Microsoft e rodapé de segurança.
+- Seletor de área mantido (obrigatório para o login) em estilo discreto. Fluxo de login validado E2E (admin, coordenador).

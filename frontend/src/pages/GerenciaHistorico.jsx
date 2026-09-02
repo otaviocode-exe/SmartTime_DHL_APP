@@ -19,6 +19,7 @@ export default function GerenciaHistorico() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [turnoFilter, setTurnoFilter] = useState("all");
   const [gestorFilter, setGestorFilter] = useState("all");
+  const [areaFilter, setAreaFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selected, setSelected] = useState(null);
@@ -82,13 +83,14 @@ export default function GerenciaHistorico() {
         const okStatus = statusFilter === "all" || r.status === statusFilter;
         const okTurno = turnoFilter === "all" || r.turno === turnoFilter;
         const okGestor = gestorFilter === "all" || r.gestor_nome === gestorFilter;
+        const okArea = areaFilter === "all" || r.area === areaFilter;
         const okFrom = !dateFrom || r.data >= dateFrom;
         const okTo = !dateTo || r.data <= dateTo;
         const okText = [r.numero, r.colaborador, r.matricula, r.gestor_nome]
           .join(" ").toLowerCase().includes(q.toLowerCase());
-        return okStatus && okTurno && okGestor && okFrom && okTo && okText;
+        return okStatus && okTurno && okGestor && okArea && okFrom && okTo && okText;
       }),
-    [items, q, statusFilter, turnoFilter, gestorFilter, dateFrom, dateTo]
+    [items, q, statusFilter, turnoFilter, gestorFilter, areaFilter, dateFrom, dateTo]
   );
 
   const gestores = useMemo(
@@ -146,10 +148,21 @@ export default function GerenciaHistorico() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
+                <SelectItem value="Pendente Supervisor">Pendente Supervisor</SelectItem>
+                <SelectItem value="Pendente Gerência">Pendente Gerência</SelectItem>
                 <SelectItem value="Aprovada">Aprovada</SelectItem>
                 <SelectItem value="Rejeitada">Rejeitada</SelectItem>
                 <SelectItem value="Cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <SelectTrigger className="w-full md:w-32" data-testid="history-area-filter">
+                <SelectValue placeholder="Área" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Áreas</SelectItem>
+                <SelectItem value="I2M">I2M</SelectItem>
+                <SelectItem value="PKCG">PKCG</SelectItem>
               </SelectContent>
             </Select>
             <Select value={turnoFilter} onValueChange={setTurnoFilter}>

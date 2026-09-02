@@ -48,7 +48,10 @@ export default function GerenciaDashboard() {
   // Chart 2: status distribution
   const byStatus = useMemo(() => {
     const acc = { Pendente: 0, Aprovada: 0, Rejeitada: 0, Cancelada: 0 };
-    items.forEach((r) => { if (acc[r.status] !== undefined) acc[r.status]++; });
+    items.forEach((r) => {
+      const key = r.status?.startsWith("Pendente") ? "Pendente" : r.status;
+      if (acc[key] !== undefined) acc[key]++;
+    });
     return Object.entries(acc)
       .map(([status, value]) => ({ status, value }))
       .filter((x) => x.value > 0);

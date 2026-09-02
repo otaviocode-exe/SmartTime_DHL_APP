@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useDevice } from "@/context/DeviceContext";
+import { homePathFor } from "@/lib/roles";
 import { Smartphone, Tablet, Laptop, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -38,7 +39,7 @@ export default function DeviceSelector() {
 
   const choose = (mode) => {
     setDeviceMode(mode);
-    const to = user?.role === "gestor" ? "/gestor" : "/gerencia";
+    const to = homePathFor(user?.role);
     navigate(to, { replace: true });
   };
 
@@ -50,7 +51,7 @@ export default function DeviceSelector() {
         <div className="w-full max-w-5xl">
           <div className="dhl-logo mb-8 justify-center flex">
             <span className="dhl-logo-mark">DHL</span>
-            <span className="text-slate-900 font-bold">Horas Extras</span>
+            <span className="text-slate-900 font-bold">SmartTime</span>
           </div>
 
           <div className="text-center mb-10">

@@ -25,7 +25,7 @@ export default function Usuarios() {
   const [users, setUsers] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    email: "", password: "", name: "", role: "gestor", setor: "", matricula: "",
+    email: "", password: "", name: "", role: "coordenador", area: "I2M", setor: "", matricula: "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -53,7 +53,7 @@ export default function Usuarios() {
       await api.post("/users", form);
       toast.success("Usuário criado com sucesso");
       setOpen(false);
-      setForm({ email: "", password: "", name: "", role: "gestor", setor: "", matricula: "" });
+      setForm({ email: "", password: "", name: "", role: "coordenador", area: "I2M", setor: "", matricula: "" });
       load();
     } catch (e) {
       toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro");
@@ -62,7 +62,7 @@ export default function Usuarios() {
     }
   };
 
-  const roleLabel = { gestor: "Gestor", gerencia: "Gerência", admin: "Admin" };
+  const roleLabel = { coordenador: "Coordenador", supervisor: "Supervisor", gestor: "Gestor", gerencia: "Gerência", admin: "Admin" };
 
   return (
     <div className="space-y-6 fade-in-up">
@@ -70,7 +70,7 @@ export default function Usuarios() {
         <div>
           <div className="uppercase tracking-[0.14em] text-xs font-bold text-slate-500">Administração</div>
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">Usuários</h1>
-          <p className="text-slate-500 mt-1">Cadastre gestores e gerentes do sistema.</p>
+          <p className="text-slate-500 mt-1">Cadastre coordenadores, supervisores e gerentes por área.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -101,11 +101,24 @@ export default function Usuarios() {
                   <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                     <SelectTrigger className="mt-1.5" data-testid="user-role-select"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gestor">Gestor</SelectItem>
+                      <SelectItem value="coordenador">Coordenador</SelectItem>
+                      <SelectItem value="supervisor">Supervisor</SelectItem>
                       <SelectItem value="gerencia">Gerência</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                {form.role !== "gerencia" && (
+                  <div>
+                    <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Área</Label>
+                    <Select value={form.area} onValueChange={(v) => setForm({ ...form, area: v })}>
+                      <SelectTrigger className="mt-1.5" data-testid="user-area-select"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="I2M">I2M</SelectItem>
+                        <SelectItem value="PKCG">PKCG</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Setor</Label>
                   <Input value={form.setor} onChange={set("setor")} className="mt-1.5" data-testid="user-setor-input" />
@@ -135,6 +148,7 @@ export default function Usuarios() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Cargo</TableHead>
+                  <TableHead>Área</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Matrícula</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -154,6 +168,7 @@ export default function Usuarios() {
                         {roleLabel[u.role] || u.role}
                       </span>
                     </TableCell>
+                    <TableCell>{u.area === "ALL" ? "Todas" : (u.area || "—")}</TableCell>
                     <TableCell>{u.setor || "—"}</TableCell>
                     <TableCell>{u.matricula || "—"}</TableCell>
                     <TableCell className="text-right">

@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { FilePlus2, ListTodo, CheckCircle2, XCircle, Clock } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
+import { homePathFor } from "@/lib/roles";
 
 const cards = [
   { key: "Pendente", label: "Pendentes", icon: Clock, color: "text-[#A16207]", bg: "bg-[#FEF9C3]" },
@@ -15,6 +16,7 @@ const cards = [
 
 export default function GestorDashboard() {
   const { user } = useAuth();
+  const basePath = homePathFor(user?.role);
   const [requests, setRequests] = useState([]);
 
   useEffect(() => {
@@ -23,7 +25,9 @@ export default function GestorDashboard() {
 
   const counts = cards.map((c) => ({
     ...c,
-    value: requests.filter((r) => r.status === c.key).length,
+    value: requests.filter((r) =>
+      c.key === "Pendente" ? r.status?.startsWith("Pendente") : r.status === c.key
+    ).length,
   }));
 
   const recent = requests.slice(0, 5);
@@ -39,12 +43,12 @@ export default function GestorDashboard() {
           <p className="text-slate-500 mt-1">Gerencie suas solicitações de horas extras.</p>
         </div>
         <div className="flex gap-2">
-          <Link to="/gestor/nova">
+          <Link to={`${basePath}/nova`}>
             <Button data-testid="new-request-btn" className="btn-primary rounded-md font-semibold">
               <FilePlus2 size={18} className="mr-2" /> Nova Solicitação
             </Button>
           </Link>
-          <Link to="/gestor/minhas">
+          <Link to={`${basePath}/minhas`}>
             <Button variant="outline" data-testid="view-mine-btn" className="rounded-md font-semibold">
               <ListTodo size={18} className="mr-2" /> Ver todas
             </Button>
@@ -74,13 +78,13 @@ export default function GestorDashboard() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading text-xl font-bold text-slate-900">Solicitações Recentes</h2>
-            <Link to="/gestor/minhas" className="text-sm text-[#D40511] font-semibold hover:underline">
+            <Link to={`${basePath}/minhas`} className="text-sm text-[#D40511] font-semibold hover:underline">
               Ver todas →
             </Link>
           </div>
           {recent.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              Nenhuma solicitação ainda. <Link to="/gestor/nova" className="text-[#D40511] font-semibold">Criar a primeira →</Link>
+              Nenhuma solicitação ainda. <Link to={`${basePath}/nova`} className="text-[#D40511] font-semibold">Criar a primeira →</Link>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">

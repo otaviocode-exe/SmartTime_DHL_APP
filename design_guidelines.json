@@ -1,105 +1,178 @@
 {
-  "theme": "Light",
-  "archetype": "4 (Swiss & High-Contrast)",
-  "design_concept": {
-    "philosophy": "Corporate precision meets high usability. The DHL Overtime Approval System is designed for quick decision-making and clear data visualization. It strictly uses DHL's brand colors (Yellow and Red) with a clean, high-contrast, professional structure.",
-    "emotional_tone": "Authoritative, efficient, clear, and professional."
-  },
-  "typography": {
-    "primary_font": "Outfit",
-    "secondary_font": "IBM Plex Sans",
-    "rules": {
-      "headings": "font-outfit tracking-tight text-slate-900 font-bold",
-      "body": "font-ibm-plex-sans leading-relaxed text-slate-700",
-      "labels": "uppercase tracking-[0.1em] text-xs font-bold text-slate-500",
-      "h1": "text-3xl md:text-4xl lg:text-5xl",
-      "h2": "text-2xl md:text-3xl",
-      "h3": "text-xl md:text-2xl",
-      "h4": "text-lg md:text-xl"
-    }
-  },
-  "colors": {
-    "brand_yellow": "#FFCC00",
-    "brand_red": "#D40511",
-    "background": "#F8FAFC",
-    "surface": "#FFFFFF",
-    "text_primary": "#0F172A",
-    "text_secondary": "#475569",
-    "border": "#E2E8F0",
-    "status": {
-      "pending": {
-        "bg": "#FEF9C3",
-        "text": "#A16207",
-        "border": "#FDE047"
-      },
-      "approved": {
-        "bg": "#DCFCE7",
-        "text": "#15803D",
-        "border": "#86EFAC"
-      },
-      "rejected": {
-        "bg": "#FEE2E2",
-        "text": "#B91C1C",
-        "border": "#FCA5A5"
+  "system_identity": {
+    "name": "SmartTime - DHL Corporate Hour Management Blueprint",
+    "persona": "E1 Creative Designer & Enterprise UX Specialist",
+    "theme_archetype": "DHL Executive Corporate Modern (Swiss & High-Contrast Precision)",
+    "context": "Enterprise Logistics & Labor Time Tracking SaaS",
+    "language": "pt-BR",
+    "brand": {
+      "company": "DHL Express / Supply Chain",
+      "app_name": "SmartTime",
+      "removed_terms": ["DHL SmartTime"],
+      "mandatory_primary_colors": {
+        "dhl_yellow": "#FFCC00",
+        "dhl_red": "#D40511"
       }
     }
   },
-  "spacing_and_layout": {
-    "container_padding": "p-6 md:p-8 lg:p-12",
-    "gap": "gap-6",
-    "dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
-    "card_padding": "p-6"
-  },
-  "components": {
-    "buttons": {
-      "primary": "bg-[#D40511] text-white hover:bg-[#B9040F] font-semibold rounded-md px-6 py-2 transition-colors",
-      "secondary": "bg-[#FFCC00] text-slate-900 hover:bg-[#E5B800] font-semibold rounded-md px-6 py-2 transition-colors",
-      "outline": "border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-md px-6 py-2 transition-colors"
+  "design_tokens": {
+    "color_palette": {
+      "dhl_postyellow": "#FFCC00",
+      "dhl_postyellow_hover": "#E5B800",
+      "dhl_postyellow_light": "#FFF9E6",
+      "dhl_red": "#D40511",
+      "dhl_red_hover": "#B9040F",
+      "dhl_red_light": "#FDF2F2",
+      "neutral_white": "#FFFFFF",
+      "neutral_bg_light": "#F5F5F5",
+      "neutral_slate_bg": "#F8FAFC",
+      "neutral_border_light": "#E2E8F0",
+      "neutral_dark_text": "#333333",
+      "neutral_slate_heading": "#0F172A",
+      "neutral_slate_body": "#334155",
+      "neutral_slate_muted": "#64748B",
+      "dark_theme": {
+        "bg_main": "#0B1220",
+        "bg_surface_card": "#111827",
+        "bg_surface_subtle": "#1E293B",
+        "bg_input": "#0F172A",
+        "border_color": "#1F2937",
+        "text_primary": "#F8FAFC",
+        "text_secondary": "#CBD5E1",
+        "text_muted": "#94A3B8"
+      }
     },
-    "cards": "bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow",
-    "inputs": "w-full border border-slate-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-[#FFCC00] focus:border-[#FFCC00] outline-none text-slate-900 bg-white",
-    "sidebar": "w-64 bg-slate-900 text-white min-h-screen border-r border-slate-800"
-  },
-  "visual_enhancers": {
-    "borders": "1px solid crisp borders for structure",
-    "shadows": "Minimal ambient shadows, mostly flat design",
-    "radius": "rounded-lg for main containers, rounded-md for buttons/inputs"
-  },
-  "media": {
-    "images": [
-      {
-        "url": "https://images.pexels.com/photos/15218464/pexels-photo-15218464.jpeg",
-        "category": "login_background",
-        "description": "Yellow DHL van, used as a subtle background or side image on the login screen."
-      },
-      {
-        "url": "https://images.unsplash.com/photo-1607124010107-a2eafce10eea",
-        "category": "brand_logo_placeholder",
-        "description": "DHL logo reference (abstract yellow/black) to be used as a logo placeholder in the sidebar or header."
-      },
-      {
-        "url": "https://images.pexels.com/photos/8463151/pexels-photo-8463151.jpeg",
-        "category": "dashboard_hero_illustration",
-        "description": "Corporate office people meeting, can be used in the welcome banner of the dashboard."
+    "typography": {
+      "font_family_heading": "'Outfit', 'Inter', -apple-system, sans-serif",
+      "font_family_body": "'IBM Plex Sans', 'Roboto', sans-serif",
+      "scale": {
+        "h1_login_title": "text-2xl sm:text-3xl font-extrabold text-[#333333] tracking-tight",
+        "h1_page_title": "text-2xl sm:text-3xl font-extrabold text-[#0F172A] dark:text-[#F8FAFC] tracking-tight",
+        "h2_section": "text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC]",
+        "h3_card": "text-base sm:text-lg font-semibold text-[#0F172A] dark:text-[#F8FAFC]",
+        "body_regular": "text-sm text-[#334155] dark:text-[#CBD5E1] leading-relaxed",
+        "caption_small": "text-xs text-[#64748B] dark:text-[#94A3B8]",
+        "label_uppercase": "text-[11px] font-bold uppercase tracking-wider text-[#64748B]"
       }
-    ]
+    },
+    "radii": {
+      "button": "rounded-lg",
+      "input": "rounded-lg",
+      "card": "rounded-xl",
+      "badge": "rounded-full",
+      "modal": "rounded-2xl"
+    },
+    "shadows": {
+      "subtle": "shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+      "card": "shadow-[0_4px_20px_rgba(0,0,0,0.06)]",
+      "floating_lg": "shadow-[0_12px_32px_rgba(0,0,0,0.12)]",
+      "glow_yellow": "shadow-[0_0_20px_rgba(255,204,0,0.35)]",
+      "glow_red": "shadow-[0_0_20px_rgba(212,5,17,0.3)]"
+    }
   },
-  "icons": {
-    "library": "lucide-react",
-    "instructions": "Use lucide-react for all icons. Standardize stroke-width to 2."
+  "brand_assets": {
+    "ios_clock_icon_spec": {
+      "description": "Exclusive SmartTime iOS-style clock icon adapted to DHL brand system",
+      "outer_container": "w-14 h-14 rounded-[14px] bg-[#FFCC00] shadow-[0_6px_18px_rgba(255,204,0,0.4)] border-2 border-[#D40511] flex items-center justify-center relative overflow-hidden",
+      "clock_face": "w-11 h-11 rounded-full bg-gradient-to-br from-[#FFF9E6] to-[#FFCC00] border border-[#D40511]/30 relative flex items-center justify-center shadow-inner",
+      "hand_hour": "absolute w-0.5 h-3 bg-[#D40511] rounded-full top-[9px] origin-bottom transform rotate-[45deg]",
+      "hand_minute": "absolute w-0.5 h-4 bg-[#D40511] rounded-full top-[5px] origin-bottom transform rotate-[130deg]",
+      "center_pin": "w-2 h-2 rounded-full bg-[#D40511] border border-white z-10 shadow-sm",
+      "tick_marks": "4 precision dot ticks in #D40511 at 12, 3, 6, 9 positions"
+    },
+    "brand_header_component": {
+      "wordmark": "SmartTime",
+      "rule": "NEVER render 'DHL SmartTime' text. Display ONLY 'SmartTime' text alongside DHL yellow/red badge and iOS clock icon"
+    }
   },
-  "accessibility": {
-    "contrast": "Ensure white text on DHL Red (#D40511) and dark slate text on DHL Yellow (#FFCC00) for strict WCAG AA compliance.",
-    "testing": "All interactive elements MUST have data-testid attributes formatted in kebab-case."
+  "page_blueprints": {
+    "login_page": {
+      "route": "/login",
+      "layout": "Split-screen modern layout on desktop (50/50), stacked single column on mobile",
+      "left_visual_panel": {
+        "background": "bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#0B1220] relative overflow-hidden p-8 sm:p-12 flex flex-col justify-between min-h-[480px] lg:min-h-screen",
+        "graphic_decorations": [
+          "Geometric DHL yellow diagonal dynamic stripes at 15-degree angle in background (opacity-20)",
+          "Logistics network nodes & time tracking subtle glow circles",
+          "Glassmorphism feature cards floating over ambient gradient",
+          "Metrics pill: '99.8% Precisão em Ponto & Horas Extra' with #FFCC00 border"
+        ],
+        "headline": "Transformação Digital e Gestão Inteligente do Tempo",
+        "subheadline": "Controle operacional corporativo de jornada, aprovações e produtividade em tempo real para equipes DHL."
+      },
+      "right_auth_panel": {
+        "container": "bg-[#F5F5F5] dark:bg-[#0B1220] flex items-center justify-center p-6 sm:p-12 min-h-screen",
+        "card_wrapper": "w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl p-8 sm:p-10 shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-slate-200/80 dark:border-slate-800",
+        "header_section": {
+          "logo": "SmartTimeLogo with iOS-style DHL Clock icon",
+          "title": "SmartTime",
+          "subtitle": "Acesse com seu e-mail corporativo para gerenciar registros e solicitações"
+        },
+        "form_fields": {
+          "area_selector": {
+            "label": "Área de Operação / Unidade",
+            "required": true,
+            "options": ["I2M - Logística Integrada", "PKCG - Packaging Operations"],
+            "testid": "login-area-selector"
+          },
+          "email_input": {
+            "label": "E-mail Corporativo",
+            "placeholder": "nome.sobrenome@dhl.com",
+            "type": "email",
+            "testid": "login-email-input"
+          },
+          "password_input": {
+            "label": "Senha",
+            "placeholder": "••••••••",
+            "type": "password",
+            "testid": "login-password-input"
+          }
+        },
+        "buttons": {
+          "primary_submit": {
+            "label": "Entrar",
+            "style": "w-full bg-[#D40511] hover:bg-[#B9040F] text-white font-bold h-12 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg focus:ring-2 focus:ring-[#D40511] focus:ring-offset-2 active:scale-[0.99]",
+            "testid": "login-submit-button"
+          },
+          "sso_microsoft": {
+            "label": "Entrar com Microsoft SSO",
+            "style": "w-full bg-white dark:bg-[#1E293B] border-2 border-[#D40511] text-[#D40511] dark:text-[#FFCC00] hover:bg-[#FDF2F2] dark:hover:bg-[#1F2937] font-semibold h-12 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 mt-3",
+            "testid": "login-microsoft-sso-button",
+            "icon": "Microsoft 4-color SVG logo"
+          }
+        }
+      }
+    },
+    "authenticated_shell": {
+      "top_yellow_indicator": "h-1.5 bg-[#FFCC00] w-full sticky top-0 z-50",
+      "sidebar": {
+        "width": "w-72",
+        "bg": "bg-[#0F172A] text-white border-r border-slate-800",
+        "header": "SmartTime iOS Clock Icon + 'SmartTime' text (NO 'DHL SmartTime') + user area pill",
+        "active_link_style": "bg-[#FFCC00] text-[#0F172A] font-bold shadow-sm rounded-lg",
+        "inactive_link_style": "text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors"
+      },
+      "header_actions": {
+        "notification_bell": "NotificationBell with DHL Red badge counter",
+        "theme_toggle": "Dark/Light mode switch built into top bar and mobile header",
+        "device_mode_indicator": "Compact pill allowing device view preview (Celular/Tablet/Notebook)"
+      }
+    }
   },
   "instructions_to_main_agent": [
-    "Use light theme as default. Use #F8FAFC as the main app background and white for cards/surfaces.",
-    "Use DHL Yellow (#FFCC00) for active states, highlights, or secondary buttons (with dark text).",
-    "Use DHL Red (#D40511) for primary actions, warnings, and the reject button.",
-    "Implement a persistent sidebar for navigation (Manager vs. Gerencia views).",
-    "The dashboard should use a dense bento grid (Control Room grid) for metric cards.",
-    "Tables should be clean, using Shadcn Table components with clear status badges.",
-    "Add 'data-testid' to all buttons, inputs, and major links.",
-    "Use 'Outfit' for headings and 'IBM Plex Sans' for body text."
+    "1. Replace all mentions of 'DHL SmartTime' with ONLY 'SmartTime' across the Login view, headers, page titles, and dialogs.",
+    "2. Render the custom iOS-inspired DHL SmartTime Clock icon component (`SmartTimeLogo`) inside `/app/frontend/src/components/` and use it on the Login page and Navigation header.",
+    "3. Keep mandatory DHL colors: DHL Postyellow (#FFCC00) and DHL Red (#D40511) for key actions, status badges, and highlights.",
+    "4. Ensure area selector ('I2M' or 'PKCG') stays compulsory on login before user proceeds to auth.",
+    "5. Use proper rounded corners (`rounded-lg` or `rounded-xl`) and subtle shadows (`shadow-sm` or `shadow-md`) aligned with modern corporate design.",
+    "6. Verify dark mode compatibility using class `theme-dark` / `dark` ensuring text has APCA contrast over dark slate backgrounds.",
+    "7. Attach `data-testid` to all form controls, submit buttons, links, and table elements."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Maintain clean corporate aesthetic without AI slop, avoiding excessive gradients on text or muddy backgrounds.",
+    "Use generous padding in table cells (`py-3.5 px-4`) and card bodies (`p-6 sm:p-8`) to give data room to breathe.",
+    "Never hide header dropdown contents or use 100% transparent nav headers without a backdrop blur or high contrast background.",
+    "Always provide explicit text contrast on hover states (e.g. `hover:bg-[#B9040F] hover:text-white`).",
+    "Ensure responsiveness on mobile, tablet, and desktop viewports."
   ]
 }

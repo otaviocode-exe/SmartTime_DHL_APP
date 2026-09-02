@@ -63,11 +63,16 @@ def _normalize(rec: dict) -> dict:
         "matricula": mat,
         "nome": nome,
         "setor": setor,
+        "area": area_from_setor(setor),
         "turma": turma,
         "turno": turno,
         "turma_hora_inicial": hi,
         "turma_hora_final": hf,
     }
+
+
+def area_from_setor(setor: str) -> str:
+    return "PKCG" if "SONIC" in (setor or "").upper() else "I2M"
 
 
 def load_from_excel(path: Path | str | None = None) -> int:
@@ -115,18 +120,37 @@ def find_by_name(name: str) -> Optional[dict]:
     return _by_name.get((name or "").strip().upper())
 
 
-def search(q: str, limit: int = 10) -> list[dict]:
+def search(q: str, limit: int = 10, area: str | None = None) -> list[dict]:
     """Busca fuzzy por trecho do nome ou matrícula (case-insensitive)."""
     q = (q or "").strip().upper()
     if not q or len(q) < 2:
         return []
     out = []
     for r in _cache:
+        if area and r["area"] != area:
+            continue
         if q in r["matricula"] or q in r["nome"].upper():
             out.append(r)
             if len(out) >= limit:
                 break
     return out
+
+
+def list_by(area: str | None = None, turno: str | None = None, setor: str | None = None) -> list[dict]:
+    out = []
+    for r in _cache:
+        if area and r["area"] != area:
+            continue
+        if turno and r["turno"] != turno:
+            continue
+        if setor and r["setor"] != setor:
+            continue
+        out.append(r)
+    return sorted(out, key=lambda x: x["nome"])
+
+
+def all_setores(area: str | None = None) -> list[str]:
+    return sorted({r["setor"] for r in _cache if r["setor"] and (not area or r["area"] == area)})
 
 
 def all_records() -> list[dict]:

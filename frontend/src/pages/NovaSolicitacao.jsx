@@ -10,8 +10,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { homePathFor } from "@/lib/roles";
+import { setorLabel } from "@/lib/format";
 import {
-  Save, ArrowLeft, Camera, Upload, X, Image as ImageIcon, FileText, Paperclip,
+  Save, ArrowLeft, Camera, Upload, X, Image as ImageIcon, FileText, Paperclip, AlertTriangle, Clock,
 } from "lucide-react";
 
 function calcHoras(hi, hf) {
@@ -32,6 +35,8 @@ const TURNO_HORARIOS = {
 
 export default function NovaSolicitacao() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const basePath = homePathFor(user?.role);
   const [form, setForm] = useState({
     colaborador: "",
     matricula: "",
@@ -47,9 +52,24 @@ export default function NovaSolicitacao() {
   const [pendingFiles, setPendingFiles] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [showSug, setShowSug] = useState(false);
+  const [adpAlert, setAdpAlert] = useState(null);
+  const [block24h, setBlock24h] = useState(null);
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
   const sugTimerRef = useRef(null);
+
+  const checkMatricula = async (mat) => {
+    const m = String(mat || "").trim();
+    if (!m) { setAdpAlert(null); setBlock24h(null); return; }
+    try {
+      const [adp, block] = await Promise.all([
+        api.get(`/integrations/adp/hora-extra/${encodeURIComponent(m)}`),
+        api.get(`/requests/block-status/${encodeURIComponent(m)}`),
+      ]);
+      setAdpAlert(adp.data.em_hora_extra ? adp.data : null);
+      setBlock24h(block.data.blocked ? block.data : null);
+    } catch { setAdpAlert(null); setBlock24h(null); }
+  };
 
   const searchColab = (text) => {
     clearTimeout(sugTimerRef.current);
@@ -76,6 +96,7 @@ export default function NovaSolicitacao() {
     }));
     setSuggestions([]);
     setShowSug(false);
+    checkMatricula(c.matricula);
     toast.success(`Colaborador ${c.nome} selecionado`);
   };
 
@@ -110,6 +131,7 @@ export default function NovaSolicitacao() {
   const lookupMatricula = async () => {
     const m = form.matricula.trim();
     if (!m) return;
+    checkMatricula(m);
     try {
       const { data } = await api.get(`/integrations/ponto/colaborador/${encodeURIComponent(m)}`);
       // Auto-fill only empty fields to avoid overriding user edits
@@ -139,6 +161,10 @@ export default function NovaSolicitacao() {
       toast.error("Limite excedido — contate o supervisor/gerente.");
       return;
     }
+    if (block24h) {
+      toast.error("Colaborador bloqueado por rejeição nas últimas 24h.");
+      return;
+    }
     setBusy(true);
     try {
       const { data } = await api.post("/requests", { ...form, total_horas: totalHoras });
@@ -158,7 +184,7 @@ export default function NovaSolicitacao() {
         }
       }
       toast.success("Solicitação enviada com sucesso!");
-      navigate("/gestor/minhas");
+      navigate(`${basePath}/minhas`);
     } catch (e) {
       toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Erro ao enviar solicitação");
     } finally {
@@ -180,8 +206,49 @@ export default function NovaSolicitacao() {
         <h1 className="font-heading text-3xl md:text-4xl font-bold text-slate-900 mt-1">
           Nova Solicitação de Horas Extras
         </h1>
-        <p className="text-slate-500 mt-1">Preencha as informações abaixo para envio à gerência.</p>
+        <p className="text-slate-500 mt-1">
+          {user?.role === "supervisor"
+            ? "Sua solicitação segue direto para o OK da Gerência."
+            : "Sua solicitação passa pelo Supervisor da área e depois pela Gerência."}
+        </p>
       </div>
+
+      {block24h && (
+        <div
+          data-testid="block-24h-alert"
+          className="rounded-lg border-2 border-[#D40511] bg-[#FEE2E2] p-4 flex items-start gap-3"
+        >
+          <div className="p-2 rounded-md bg-[#D40511] text-white shrink-0"><Clock size={18} /></div>
+          <div>
+            <div className="font-heading text-base font-bold text-[#7F1D1D]">
+              Bloqueio de 24h ativo para esta matrícula
+            </div>
+            <p className="text-sm text-[#7F1D1D] mt-1">
+              A solicitação {block24h.numero} para <b>{block24h.colaborador}</b> foi rejeitada em{" "}
+              {new Date(block24h.rejected_at).toLocaleString("pt-BR")}. Uma nova solicitação
+              só será permitida a partir de <b>{new Date(block24h.retry_at).toLocaleString("pt-BR")}</b>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {adpAlert && (
+        <div
+          data-testid="adp-alert"
+          className="rounded-lg border-2 border-[#F59E0B] bg-[#FEF3C7] p-4 flex items-start gap-3"
+        >
+          <div className="p-2 rounded-md bg-[#F59E0B] text-white shrink-0"><AlertTriangle size={18} /></div>
+          <div>
+            <div className="font-heading text-base font-bold text-[#92400E]">
+              Colaborador já está em hora extra agora ({adpAlert.fonte})
+            </div>
+            <p className="text-sm text-[#92400E] mt-1">
+              Segundo o Ponto ADP, a matrícula {adpAlert.matricula} está em hora extra
+              {adpAlert.horas_extras_hoje ? ` (${adpAlert.horas_extras_hoje}h hoje)` : ""}. Verifique antes de solicitar mais horas.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Card className="border-slate-200 shadow-sm">
         <CardContent className="p-6 md:p-8">
@@ -213,7 +280,7 @@ export default function NovaSolicitacao() {
                         >
                           <div className="text-sm font-semibold text-slate-900">{c.nome}</div>
                           <div className="text-[10px] text-slate-500">
-                            Matrícula {c.matricula} · {c.setor || "—"} · Turno {c.turno}
+                            Matrícula {c.matricula} · {setorLabel(c.setor)} · Turno {c.turno}
                           </div>
                         </li>
                       ))}
@@ -402,9 +469,9 @@ export default function NovaSolicitacao() {
               <Button type="button" variant="outline" onClick={() => navigate(-1)} data-testid="cancel-btn">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={busy || exceedsLimit} className="btn-primary rounded-md font-semibold disabled:opacity-40 disabled:cursor-not-allowed" data-testid="submit-request-btn">
+              <Button type="submit" disabled={busy || exceedsLimit || !!block24h} className="btn-primary rounded-md font-semibold disabled:opacity-40 disabled:cursor-not-allowed" data-testid="submit-request-btn">
                 <Save size={18} className="mr-2" />
-                {busy ? "Enviando..." : exceedsLimit ? "Contate o supervisor" : "Enviar Solicitação"}
+                {busy ? "Enviando..." : block24h ? "Bloqueado (24h)" : exceedsLimit ? "Contate o supervisor" : "Enviar Solicitação"}
               </Button>
             </div>
           </form>

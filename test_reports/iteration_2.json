@@ -1,0 +1,55 @@
+{
+  "summary": "Full backend + frontend regression of SmartTime (ex-DHL Horas Extras) focused on the new individual PDF receipt, the DHL->SmartTime / Sonic->PKCG rename, 2-step approval, 24h block, bulk create, ADP mock, reports and area segregation. Backend: 49/50 pytest tests pass (1 real failure, 1 documented xfail). Frontend: rename regression NOT reproduced (app loads, title='SmartTime'), individual PDF works end-to-end in both 'Minhas Solicitações' and Gerência 'Histórico', and is correctly hidden for pending requests. ONE CRITICAL frontend crash found: the Solicitação em Massa page throws 'Maximum update depth exceeded' and dies (red overlay) as soon as any collaborator is selected, so mass requests cannot be created from the UI at all (backend /requests/bulk-create itself is fine).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/reports/monthly.pdf?month=2026-13-xx (malformed)", "issue": "Returns 500. server.py:1016 does `y, m = month.split(\"-\")` + int() without validation -> ValueError. Should be 400/422 with a pt-BR message."},
+      {"endpoint": "POST /api/auth/login", "issue": "No brute-force lockout: 6+ wrong passwords all return 401, never 429/423 (playbook item 4 not implemented). Marked xfail in the suite."},
+      {"endpoint": "CORS (server.py:1195-1201)", "issue": "allow_credentials=True combined with allow_origins=['*'] AND allow_origin_regex='.*' — any origin can send credentialed requests. Playbook requires explicit origin allow-list."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "SolicitacaoMassa (/coordenador/massa, /supervisor/massa)", "issue": "CRITICAL: clicking any collaborator (row or its checkbox) crashes the page with React 'Maximum update depth exceeded' and a full-screen error overlay; massa-selected-count disappears and the feature is unusable. 100% reproducible (3/3 runs). RCA: the <li> has onClick={() => toggle(mat)} AND wraps <Checkbox onCheckedChange={() => toggle(mat)}>. Radix Checkbox's hidden BubbleInput re-dispatches a click event when the `checked` prop changes; that event bubbles to the <li> onClick -> toggle again -> checked flips -> new bubble click -> infinite setState loop (stack: dispatchSetState -> setRef -> Array.map). Fix: keep only ONE handler (drop the <li> onClick, or stopPropagation on the checkbox wrapper). Note the same Checkbox is fine in Aprovacoes.jsx because the card has no onClick.", "selector": "[data-testid^='massa-colab-']", "priority": "CRITICAL"},
+      {"component": "RequestDetailDialog (MinhasSolicitacoes.jsx, reused by GerenciaHistorico)", "issue": "Approval trail is incomplete in the UI: dialog only shows 'Gestor' and 'Gerente'. supervisor_nome ('Roberto Nunes') and data_aval_supervisor exist in the API response and are printed in the individual PDF, but are never rendered in the dialog.", "selector": "[role='dialog']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Solicitação em Massa (UI -> POST /requests/bulk-create)", "issue": "Could not be exercised from the UI because of the crash above. Backend bulk-create verified by pytest (created/failed lists, duplicate/overlap failures, 422 on empty list).", "affected_selectors": ["[data-testid^='massa-colab-']", "[data-testid='massa-selected-count']", "[data-testid='massa-select-all']"]}
+    ],
+    "design_issues": [
+      {"screen": "Aprovações (supervisor PKCG), Solicitação em Massa, request detail dialog, individual PDF", "issues": ["Rebranding incomplete: the legacy label 'SONIC' is still shown to users as a sector name ('UNILEVER VINHEDO - SONIC'; the massa list strips the prefix and shows just 'SONIC'). Source: /app/backend/integrations/colaboradores_db.py, where 'SONIC' is also the discriminator used by _area_of() to derive area=PKCG. Needs a presentation-level mapping SONIC->PKCG (data value can stay)."]},
+      {"screen": "NovaSolicitacao, SolicitacaoMassa, GerenciaHistorico filters", "issues": ["Native browser date/time pickers (input type=date / type=time) are used instead of the shadcn Calendar component", "Histórico date filters render as mm/dd/yyyy (US format) in an otherwise pt-BR UI"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "CRITICAL: fix the infinite render loop in SolicitacaoMassa.jsx — remove the duplicated toggle (either drop onClick on the <li> or stop propagation from the Checkbox), then re-verify mass creation end-to-end in the browser.",
+    "Validate the `month` query param in GET /api/reports/monthly.pdf (regex ^\\d{4}-\\d{2}$) and return 400 instead of 500.",
+    "Render supervisor_nome / data_aval_supervisor in RequestDetailDialog so the 2-step trail is visible in the UI (data already returned by the API).",
+    "Map the legacy sector label 'SONIC' to 'PKCG' at presentation level (UI list, cards, detail dialog and PDF) to finish the rename.",
+    "Restrict CORS: replace allow_origins=['*'] / allow_origin_regex='.*' with the explicit preview/production origins since allow_credentials=True.",
+    "Optional (playbook): add brute-force lockout (429/423 after 5 failed logins).",
+    "Refactor: /app/backend/server.py is 1272 lines — split into routers (auth, requests, reports, integrations)."
+  ],
+  "critical_code_review_comments": [
+    "SolicitacaoMassa.jsx:193-199 — nested click handlers on the <li> and the Radix Checkbox double-toggle the same state; combined with Radix's BubbleInput click re-dispatch this produces an unbounded render loop. Only one of the two handlers must mutate `selected`.",
+    "server.py:1016 — `y, m = month.split('-')` / int() on unvalidated user input; use a Pydantic-validated pattern or try/except -> HTTPException(400).",
+    "server.py:1195-1201 — allow_credentials=True with wildcard origin + '.*' regex defeats the purpose of the origin check.",
+    "colaboradores_db.py:75 — area is inferred from the string 'SONIC' inside the sector name; this couples business logic to a legacy label that is also displayed to users. Introduce an explicit area field / display-name map.",
+    "server.py is 1272 lines and mixes auth, CRUD, reporting and PDF/Excel generation — split into modules (>700-line guideline)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py"
+  ],
+  "success_rate": {"backend": "98% (49/50 pytest, 1 xfail documented)", "frontend": "88% (all flows pass except Solicitação em Massa which crashes)"},
+  "seed_data_creation": "Created 1 real request via the UI as Coordenador I2M (HE-20260902121714-0031, JESSICA SANTANA PEREIRA, 2026-12-18, 1.5h) and drove it through Supervisor -> Gerência to status 'Aprovada' (trail: Roberto Nunes / Ana Ferreira) — kept in DB as a clean sample for individual-PDF testing. All 48 previously-leaked TEST_* requests were purged; DB now holds 16 requests. Added a pytest_sessionfinish cleanup hook (xdist-controller-only) to conftest.py so future runs self-clean.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "/app/memory/test_credentials.md is present and all 6 accounts (admin, gerente, gestor, coordenador.pkcg, supervisor, supervisor.pkcg) authenticate successfully; login payload requires {email, password, area}.",
+  "context_for_next_testing_agent": "Run `cd /app/backend && python -m pytest tests/ -q` (pytest.ini already enables xdist; conftest purges TEST_ data in the controller only — never make that fixture worker-scoped or workers delete each other's data mid-run). VERIFIED PASSING: title 'SmartTime' + no 'Sonic' on login; wrong-area login blocked with 'Você não pertence à área PKCG. Sua área é I2M.'; autocomplete on /coordenador/nova needs >=2 chars and auto-fills matricula/setor/turno; >2h shows the 'Limite de 2 horas excedido' banner and disables submit ('Contate o supervisor'); 24h block banner shows the release datetime and disables submit ('Bloqueado (24h)'); full 2-step approval Coordenador->Supervisor->Gerência incl. 'Pendente Gerência' badge; individual PDF button data-testid='download-request-pdf-btn' visible only for evaluated requests, downloads a real %PDF in both Minhas Solicitações and Histórico; backend PDF 403 for other coordenador / other-area supervisor, 400 for pending, 404 unknown, 401 anon; export-pdf-btn (relatorio_2026-09.pdf) and export-excel-btn (.xlsx) both download; Histórico area filter via [data-testid='history-area-filter'] (PKCG 11 / I2M 53 rows at the time); supervisor PKCG sees only PKCG, supervisor I2M only I2M; bulk approve checkboxes on Aprovações work without crashing. STILL UNTESTED: mass creation happy path from the UI (blocked by the crash), attachments upload, push notifications, Usuários/Auditoria/Configurações screens, mobile viewport.",
+  "rca_of_the_issue": "Massa crash: SolicitacaoMassa.jsx renders each collaborator as `<li onClick={() => toggle(c.matricula)}>` containing `<Checkbox checked={selected.has(...)} onCheckedChange={() => toggle(...)}>`. @radix-ui/react-checkbox 1.2.3 renders a hidden BubbleInput that dispatches a synthetic click on the underlying input whenever the controlled `checked` prop changes; that synthetic click bubbles up to the <li> onClick, which toggles the state again, which flips `checked` again — an unbounded setState/ref loop that React aborts with 'Maximum update depth exceeded' (stack: dispatchSetState -> setRef -> Array.map). Reproduction: login gestor@dhl.com/gestor123 (area I2M) -> /coordenador/massa -> click any [data-testid^='massa-colab-'] -> red overlay within ~1s. Mitigation: keep a single mutation path for `selected`. Monthly PDF 500: unvalidated `month` query param split/int at server.py:1016."
+}

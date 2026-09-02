@@ -22,10 +22,10 @@ export function AuthProvider({ children }) {
     refresh();
   }, [refresh]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, area) => {
     setError("");
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post("/auth/login", { email, password, area });
       setUser(data);
       return { ok: true };
     } catch (e) {

@@ -55,7 +55,7 @@ export default function InstallPrompt() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-heading font-bold text-white text-sm">
-            Instalar DHL Horas Extras
+            Instalar SmartTime
           </div>
           <div className="text-slate-300 text-xs mt-0.5">
             {isIOS

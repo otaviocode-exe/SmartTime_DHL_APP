@@ -5,16 +5,29 @@ import { useDevice } from "@/context/DeviceContext";
 import api from "@/lib/api";
 import {
   LayoutDashboard, FilePlus2, ListTodo, ClipboardList, Users, History,
-  Settings, ScrollText, LogOut, Menu, X, MonitorSmartphone, Paperclip,
+  Settings, ScrollText, LogOut, Menu, X, MonitorSmartphone, UsersRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
+import SmartTimeLogo from "@/components/SmartTimeLogo";
+import DhlLogo from "@/components/DhlLogo";
+import { roleLabel } from "@/lib/roles";
 
-const gestorNav = [
-  { to: "/gestor", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gestor-dashboard" },
-  { to: "/gestor/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
-  { to: "/gestor/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
-  { to: "/gestor/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes-gestor" },
+const coordenadorNav = [
+  { to: "/coordenador", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-coordenador-dashboard" },
+  { to: "/coordenador/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
+  { to: "/coordenador/massa", icon: UsersRound, label: "Solicitação em Massa", short: "Massa", testid: "nav-solicitacao-massa" },
+  { to: "/coordenador/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
+  { to: "/coordenador/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes-gestor" },
+];
+
+const supervisorNav = [
+  { to: "/supervisor", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-supervisor-dashboard" },
+  { to: "/supervisor/aprovacoes", icon: ClipboardList, label: "Aprovações", short: "Aprovar", testid: "nav-aprovacoes", badgeKey: "pending" },
+  { to: "/supervisor/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
+  { to: "/supervisor/massa", icon: UsersRound, label: "Solicitação em Massa", short: "Massa", testid: "nav-solicitacao-massa" },
+  { to: "/supervisor/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
+  { to: "/supervisor/configuracoes", icon: Settings, label: "Configurações", short: "Ajustes", testid: "nav-configuracoes-supervisor" },
 ];
 
 const gerenciaNav = [
@@ -31,14 +44,14 @@ export default function Layout() {
   const { deviceMode, resetDeviceMode } = useDevice();
   const navigate = useNavigate();
   const location = useLocation();
-  const nav = user?.role === "gestor" ? gestorNav : gerenciaNav;
+  const nav = user?.role === "coordenador" ? coordenadorNav : user?.role === "supervisor" ? supervisorNav : gerenciaNav;
   const [pendingCount, setPendingCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   useEffect(() => {
-    if (user?.role !== "gerencia" && user?.role !== "admin") return;
+    if (!["supervisor", "gerencia", "admin"].includes(user?.role)) return;
     const fetchPending = () => {
       api.get("/requests/stats").then((r) => setPendingCount(r.data.pending)).catch(() => {});
     };
@@ -62,75 +75,73 @@ export default function Layout() {
   const Sidebar = (
     <aside
       data-testid="sidebar"
-      className="w-72 bg-slate-900 text-white flex flex-col border-r border-slate-800 h-full"
+      className="w-48 bg-white text-slate-800 flex flex-col rounded-2xl border border-slate-100 shadow-[0_10px_34px_rgba(15,23,42,0.10)] h-full overflow-hidden"
     >
-      <div className="px-5 py-5 border-b border-slate-800 flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="dhl-logo text-white">
-            <span className="dhl-logo-mark">DHL</span>
-            <span className="text-sm font-semibold tracking-wide text-slate-200">Horas Extras</span>
-          </div>
-          <div className="mt-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
-              {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
-            </div>
-            <div className="mt-1 text-sm font-medium truncate" data-testid="sidebar-user-name">{user?.name}</div>
-            <div className="text-xs text-slate-400 truncate">{user?.email}</div>
-          </div>
+      {/* DHL brand box */}
+      <div className="relative px-3 pt-3">
+        <div className="rounded-xl bg-[#FFCC00] py-3.5 flex items-center justify-center">
+          <DhlLogo height={22} />
         </div>
         {(!isNotebook) && (
           <button
-            className="text-slate-400 hover:text-white"
+            className="absolute top-4 right-4 text-slate-500 hover:text-slate-900"
             onClick={() => setMobileOpen(false)}
             aria-label="Fechar menu"
             data-testid="close-menu-btn"
           >
-            <X size={22} />
+            <X size={18} />
           </button>
         )}
       </div>
 
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-3 px-3 space-y-1 overflow-y-auto">
         {nav.map((item) => (
           <NavLink
             key={item.to} to={item.to} end={item.end} data-testid={item.testid}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-md text-sm transition-colors ${
-                isActive ? "bg-[#FFCC00] text-slate-900 font-semibold"
-                         : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              `relative flex flex-col items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-center transition-colors ${
+                isActive ? "bg-slate-100 text-slate-900"
+                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`
             }
           >
-            <item.icon size={18} strokeWidth={2} />
-            <span className="flex-1">{item.label}</span>
-            {item.badgeKey === "pending" && pendingCount > 0 && (
-              <span
-                data-testid="sidebar-pending-badge"
-                className="bg-[#D40511] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center"
-              >
-                {pendingCount}
-              </span>
-            )}
+            <span className="relative">
+              <item.icon size={22} strokeWidth={2} />
+              {item.badgeKey === "pending" && pendingCount > 0 && (
+                <span
+                  data-testid="sidebar-pending-badge"
+                  className="absolute -top-2 -right-2.5 bg-[#D40511] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center leading-tight"
+                >
+                  {pendingCount}
+                </span>
+              )}
+            </span>
+            <span className="text-[11px] font-medium leading-tight">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-3 border-t border-slate-800 space-y-1">
-        <Button
-          variant="ghost"
+      <div className="px-3 pb-3 pt-2 border-t border-slate-100">
+        <div className="px-2 pt-2 pb-3 text-center" data-testid="sidebar-user-name">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-semibold">
+            {roleLabel(user?.role)}{user?.area && user.area !== "ALL" ? ` · ${user.area}` : ""}
+          </div>
+          <div className="mt-0.5 text-xs font-semibold text-slate-800 truncate">{user?.name}</div>
+        </div>
+        <button
+          data-testid="logout-btn" onClick={handleLogout}
+          className="w-full flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl text-slate-600 hover:bg-[#FDF2F2] hover:text-[#D40511] transition-colors"
+        >
+          <LogOut size={20} strokeWidth={2} />
+          <span className="text-[11px] font-medium">Sair</span>
+        </button>
+        <button
           onClick={changeDevice}
           data-testid="change-device-btn"
-          className="w-full justify-start text-slate-400 hover:bg-slate-800 hover:text-white text-xs"
+          className="mt-1 w-full text-center text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
         >
-          <MonitorSmartphone size={16} className="mr-2" />
-          Trocar dispositivo ({deviceMode || "auto"})
-        </Button>
-        <Button
-          data-testid="logout-btn" onClick={handleLogout} variant="ghost"
-          className="w-full justify-start text-slate-300 hover:bg-slate-800 hover:text-white"
-        >
-          <LogOut size={18} className="mr-2" /> Sair
-        </Button>
+          Dispositivo: {deviceMode || "auto"}
+        </button>
       </div>
     </aside>
   );
@@ -167,19 +178,19 @@ export default function Layout() {
     <div className={`app-shell flex bg-[#F8FAFC] min-h-screen ${isCelular ? "pb-16" : ""}`}>
       {/* Desktop sidebar: only for notebook */}
       {isNotebook && (
-        <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
+        <div className="hidden md:block sticky top-0 h-screen p-3">{Sidebar}</div>
       )}
 
       {/* Tablet: always-open narrow-ish sidebar */}
       {isTablet && (
-        <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
+        <div className="hidden md:block sticky top-0 h-screen p-3">{Sidebar}</div>
       )}
 
       {/* Drawer (used for tablet mode below md breakpoint and notebook mode on smaller screens — NOT for celular) */}
       {mobileOpen && !isCelular && (
         <div className={`fixed inset-0 z-50 ${isNotebook ? "md:hidden" : ""}`} data-testid="mobile-drawer">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 bottom-0 w-72">{Sidebar}</div>
+          <div className="absolute left-0 top-0 bottom-0 p-3">{Sidebar}</div>
         </div>
       )}
 
@@ -189,15 +200,12 @@ export default function Layout() {
         {/* Top bar: for celular (logo only, no hamburger) AND on small screens for notebook */}
         {isCelular ? (
           <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
-            <div className="dhl-logo">
-              <span className="dhl-logo-mark">DHL</span>
-              <span className="text-sm font-bold text-slate-900">Horas Extras</span>
-            </div>
+            <SmartTimeLogo size={32} wordmarkClass="text-sm text-[#333333]" />
             <div className="flex items-center gap-2">
               <NotificationBell />
               <div className="text-right leading-tight">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
-                  {user?.role === "gestor" ? "Gestor" : user?.role === "gerencia" ? "Gerência" : "Admin"}
+                  {roleLabel(user?.role)}
                 </div>
                 <div className="text-xs font-semibold text-slate-900 truncate max-w-[120px]">
                   {user?.name?.split(" ")[0]}
@@ -215,10 +223,7 @@ export default function Layout() {
             >
               <Menu size={22} className="text-slate-700" />
             </button>
-            <div className="dhl-logo flex-1">
-              <span className="dhl-logo-mark">DHL</span>
-              <span className="text-sm font-bold text-slate-900">Horas Extras</span>
-            </div>
+            <div className="flex-1"><SmartTimeLogo size={32} wordmarkClass="text-sm text-[#333333]" /></div>
             <NotificationBell />
           </div>
         ) : null}
