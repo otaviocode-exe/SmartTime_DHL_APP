@@ -18,6 +18,8 @@ import GerenciaHistorico from "@/pages/GerenciaHistorico";
 import Usuarios from "@/pages/Usuarios";
 import Configuracoes from "@/pages/Configuracoes";
 import AuditLog from "@/pages/AuditLog";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import { Toaster } from "@/components/ui/sonner";
 import InstallPrompt from "@/components/InstallPrompt";
 
@@ -37,6 +39,8 @@ function App() {
             <ThemeProvider>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={<HomeRedirect />} />
 
                 <Route

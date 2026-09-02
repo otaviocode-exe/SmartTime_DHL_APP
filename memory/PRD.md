@@ -56,3 +56,10 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
 - Barra lateral (`Layout.jsx`) redesenhada: card branco flutuante (rounded-2xl), caixa amarela DHL no topo, itens com ícone centralizado + rótulo abaixo, item ativo com destaque cinza claro, badge vermelho de pendências, rodapé com usuário + Sair (sem seletor de idioma, por escolha do usuário).
 - Tela de login (`Login.jsx`) redesenhada em 2 painéis: esquerda amarela DHL limpa (apenas logo, sem texto/ilustração); direita branca com pílula "Português", relógio SmartTime, divisor "GESTÃO DE HORAS EXTRAS", seletor de área minimalista (segmentado I2M/PKCG), campos com ícones, mostrar/ocultar senha, "Esqueceu sua senha?", botão Entrar, SSO Microsoft e rodapé de segurança.
 - Seletor de área mantido (obrigatório para o login) em estilo discreto. Fluxo de login validado E2E (admin, coordenador).
+
+## Recuperação de Senha + Modo Escuro (Jun/2026)
+- **Recuperação de senha (Resend)**: novos endpoints `POST /api/auth/forgot-password` e `POST /api/auth/reset-password`. Token de uso único `secrets.token_urlsafe(32)` armazenado em `password_reset_tokens` (expira em 1h). Integração de e-mail em `backend/integrations/email.py` (Resend). Sem chave configurada, o link é retornado na resposta/log (MODO DE TESTE) para validar o fluxo.
+  - Único lugar para colar a chave: `RESEND_API_KEY` em `/app/backend/.env` (remetente de teste `onboarding@resend.dev`; `APP_PUBLIC_URL` define o domínio do link).
+  - Frontend: páginas `/forgot-password` e `/reset-password`; botão "Esqueceu sua senha?" no login agora navega para o fluxo.
+  - Testado E2E: link gerado → token de uso único → senha alterada → login com nova senha OK → senha antiga rejeitada.
+- **Modo escuro completo**: `ThemeToggle.jsx` (Sol/Lua) adicionado no topo do login e dos cabeçalhos do Layout (notebook/tablet/celular). `ThemeContext` persiste em localStorage; overrides globais em `index.css` (classe `theme-dark`) cobrem cards, textos, inputs, bordas e preservam as cores DHL.

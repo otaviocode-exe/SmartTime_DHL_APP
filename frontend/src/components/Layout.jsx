@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
 import SmartTimeLogo from "@/components/SmartTimeLogo";
 import DhlLogo from "@/components/DhlLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 import { roleLabel } from "@/lib/roles";
 
 const coordenadorNav = [
@@ -202,6 +203,7 @@ export default function Layout() {
           <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
             <SmartTimeLogo size={32} wordmarkClass="text-sm text-[#333333]" />
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <NotificationBell />
               <div className="text-right leading-tight">
                 <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500 font-semibold">
@@ -224,13 +226,15 @@ export default function Layout() {
               <Menu size={22} className="text-slate-700" />
             </button>
             <div className="flex-1"><SmartTimeLogo size={32} wordmarkClass="text-sm text-[#333333]" /></div>
+            <ThemeToggle />
             <NotificationBell />
           </div>
         ) : null}
 
         {/* Desktop notification bell (top-right floating) */}
         {isNotebook && (
-          <div className="hidden md:block absolute top-3 right-6 z-20">
+          <div className="hidden md:flex absolute top-3 right-6 z-20 items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
           </div>
         )}

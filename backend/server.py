@@ -8,6 +8,7 @@ import os
 import logging
 import re
 import uuid
+import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Literal
 
@@ -28,6 +29,7 @@ from integrations.storage import init_storage, put_object, get_object, APP_NAME 
 from integrations.ai_classifier import classify_motivo
 from integrations.push import public_key as vapid_public_key, send_push
 from integrations import colaboradores_db as colab_db
+from integrations.email import send_email, password_reset_html
 
 from fastapi import UploadFile, File
 
@@ -139,6 +141,13 @@ class LoginIn(BaseModel):
     password: str
     area: Optional[str] = None
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    password: str = Field(min_length=6)
+
 class UserCreateIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
@@ -235,6 +244,53 @@ async def logout(response: Response, _user: dict = Depends(get_current_user)):
 @api.get("/auth/me")
 async def me(user: dict = Depends(get_current_user)):
     return user_public(user)
+
+RESET_TOKEN_TTL_HOURS = 1
+
+@api.post("/auth/forgot-password")
+async def forgot_password(body: ForgotPasswordIn, request: Request):
+    email = body.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    generic = {"ok": True, "message": "Se o e-mail estiver cadastrado, enviaremos um link de recuperação."}
+    if not user:
+        return generic
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    await db.password_reset_tokens.insert_one({
+        "token": token,
+        "user_id": user["id"],
+        "email": email,
+        "used": False,
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(hours=RESET_TOKEN_TTL_HOURS)).isoformat(),
+    })
+    base = (os.environ.get("APP_PUBLIC_URL", "").strip() or request.headers.get("origin", "")).rstrip("/")
+    reset_link = f"{base}/reset-password?token={token}"
+    sent = await send_email(
+        email,
+        "SmartTime — Redefinição de senha",
+        password_reset_html(reset_link, user.get("name", "")),
+    )
+    resp = dict(generic)
+    if not sent:
+        # Modo de teste (sem RESEND_API_KEY): expõe o link para validar o fluxo.
+        resp["reset_link"] = reset_link
+        logger.info(f"[FORGOT PASSWORD] Link de recuperação para {email}: {reset_link}")
+    return resp
+
+@api.post("/auth/reset-password")
+async def reset_password(body: ResetPasswordIn):
+    doc = await db.password_reset_tokens.find_one({"token": body.token})
+    if not doc or doc.get("used"):
+        raise HTTPException(status_code=400, detail="Link inválido ou já utilizado.")
+    if datetime.now(timezone.utc) > datetime.fromisoformat(doc["expires_at"]):
+        raise HTTPException(status_code=400, detail="Link expirado. Solicite um novo.")
+    await db.users.update_one({"id": doc["user_id"]}, {"$set": {"password_hash": hash_password(body.password)}})
+    await db.password_reset_tokens.update_one(
+        {"token": body.token},
+        {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    return {"ok": True, "message": "Senha redefinida com sucesso."}
 
 # ---------------- User Management ----------------
 @api.post("/users")
@@ -1243,6 +1299,7 @@ async def _migrate_roles_and_areas():
 @app.on_event("startup")
 async def on_startup():
     await db.users.create_index("email", unique=True)
+    await db.password_reset_tokens.create_index("token", unique=True)
     await db.requests.create_index("gestor_id")
     await db.requests.create_index("status")
     await db.requests.create_index("created_at")

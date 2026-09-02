@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SmartTimeIcon } from "@/components/SmartTimeLogo";
 import DhlLogo from "@/components/DhlLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Globe, ChevronDown, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,16 +73,19 @@ export default function Login() {
               <DhlLogo height={20} />
             </span>
           </div>
-          <button
-            type="button"
-            data-testid="login-language-btn"
-            onClick={() => toast.info("Outros idiomas em breve.")}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <Globe size={16} className="text-slate-400" />
-            Português
-            <ChevronDown size={14} className="text-slate-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              type="button"
+              data-testid="login-language-btn"
+              onClick={() => toast.info("Outros idiomas em breve.")}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <Globe size={16} className="text-slate-400" />
+              Português
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+          </div>
         </div>
 
         {/* Form */}
@@ -185,7 +189,7 @@ export default function Login() {
                 <button
                   type="button"
                   data-testid="forgot-password-btn"
-                  onClick={() => toast.info("Contate a TI Operações para redefinir sua senha.")}
+                  onClick={() => navigate("/forgot-password")}
                   className="text-sm font-semibold text-[#D40511] hover:text-[#B9040F] transition-colors"
                 >
                   Esqueceu sua senha?

@@ -249,3 +249,12 @@ html.theme-dark textarea::placeholder { color: #64748B !important; }
 /* App shell + bottom tabs (mobile) */
 html.theme-dark .app-shell { background-color: #0B1220 !important; }
 html.theme-dark nav[data-testid="bottom-tabs"] { background-color: #0F172A !important; border-color: #1F2937 !important; }
+
+/* Brand dark tweaks for hex-based colors used across auth/UI */
+html.theme-dark .text-\[\#333333\] { color: #F1F5F9 !important; }
+html.theme-dark .bg-\[\#F5F5F5\] { background-color: #0B1220 !important; }
+html.theme-dark .bg-\[\#FFF9E6\] { background-color: rgba(255,204,0,0.12) !important; }
+html.theme-dark .bg-\[\#FDF2F2\] { background-color: rgba(212,5,17,0.14) !important; }
+html.theme-dark .border-\[\#FCA5A5\] { border-color: rgba(212,5,17,0.5) !important; }
+/* Theme toggle button surface */
+html.theme-dark [data-testid="theme-toggle-btn"] { background-color: #111827 !important; border-color: #334155 !important; color: #CBD5E1 !important; }
