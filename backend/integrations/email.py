@@ -43,7 +43,7 @@ def password_reset_html(link: str, name: str = "") -> str:
       <span style="font-size:26px;font-weight:900;font-style:italic;color:#D40511;letter-spacing:-1px;">DHL</span>
     </div>
     <div style="background:#ffffff;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 12px 12px;padding:32px 28px;">
-      <h1 style="margin:0 0 4px;font-size:22px;color:#333333;">Smart<span style="color:#D40511;">Time</span></h1>
+      <h1 style="margin:0 0 4px;font-size:22px;color:#333333;">Smart<span style="color:#D40511;">Time!</span></h1>
       <p style="margin:0 0 24px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#94A3B8;font-weight:bold;">Gestão de Horas Extras</p>
       <p style="font-size:15px;color:#334155;margin:0 0 12px;">{hi}</p>
       <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 24px;">

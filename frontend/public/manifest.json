@@ -1,7 +1,7 @@
 {
-  "name": "SmartTime",
-  "short_name": "SmartTime",
-  "description": "SmartTime — Aprovação de Horas Extras",
+  "name": "SmartTime!",
+  "short_name": "SmartTime!",
+  "description": "SmartTime! — Aprovação de Horas Extras",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -86,9 +86,9 @@ export default function Login() {
           <form onSubmit={submit} className="w-full max-w-md">
             {/* Brand header */}
             <div className="flex flex-col items-center text-center">
-              <SmartTimeIcon size={88} className="rounded-[22px] shadow-[0_10px_28px_rgba(255,204,0,0.4)]" />
+              <SmartTimeIcon size={88} />
               <div className="mt-5 font-heading text-4xl font-extrabold tracking-tight text-[#333333]">
-                Smart<span className="text-[#D40511]">Time</span>
+                Smart<span className="text-[#D40511]">Time!</span>
               </div>
               <div className="mt-2.5 flex items-center gap-3">
                 <span className="h-px w-8 bg-[#D40511]/40" />
