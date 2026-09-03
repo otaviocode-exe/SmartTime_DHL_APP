@@ -1,4 +1,4 @@
-export function SmartTimeIcon({ size = 40, className = "" }) {
+export function SmartTimeIcon({ size = 40, className = "", filled = false }) {
   return (
     <svg
       width={size}
@@ -9,6 +9,7 @@ export function SmartTimeIcon({ size = 40, className = "" }) {
       aria-hidden="true"
       data-testid="smarttime-icon"
     >
+      {filled && <rect x="0" y="0" width="512" height="512" rx="120" fill="#FFCC00" />}
       <g transform="matrix(1,0,0,-1,0,512)">
         <path
           d="M402 274C402 364.5747 328.5747 438 238 438 147.4253 438 74 364.5747 74 274 74 183.4253 147.4253 110 238 110 328.5747 110 402 183.4253 402 274"

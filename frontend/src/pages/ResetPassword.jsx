@@ -69,7 +69,7 @@ export default function ResetPassword() {
       <div className="flex-1 flex items-center justify-center px-6 pb-16">
         <div className="w-full max-w-md rounded-2xl bg-white border border-slate-200/80 p-8 shadow-[0_10px_36px_rgba(0,0,0,0.07)]">
           <div className="flex flex-col items-center text-center">
-            <SmartTimeIcon size={64} />
+            <SmartTimeIcon size={64} filled />
             <h1 className="mt-4 font-heading text-2xl font-extrabold text-[#333333]">Definir nova senha</h1>
             <p className="mt-1.5 text-sm text-slate-500">Crie uma nova senha para sua conta SmartTime.</p>
           </div>
