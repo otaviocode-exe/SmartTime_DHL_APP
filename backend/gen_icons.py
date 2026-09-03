@@ -5,8 +5,8 @@ from pathlib import Path
 
 PUB = Path("/app/frontend/public")
 
-# Transparent SmartTime icon (red clock + yellow "+" badge, NO yellow background)
-ICON_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+# Shared artwork (red clock + yellow "+" badge) — exact vector from the client's PDF.
+ART = '''
 <g transform="matrix(1,0,0,-1,0,512)">
 <path stroke-width="28" stroke-linecap="butt" fill="none" stroke="#d40511" d="M402 274C402 364.5747 328.5747 438 238 438 147.4253 438 74 364.5747 74 274 74 183.4253 147.4253 110 238 110 328.5747 110 402 183.4253 402 274"/>
 <path stroke-width="18" stroke-linecap="round" fill="none" stroke="#d40511" d="M238 406V426"/>
@@ -19,6 +19,21 @@ ICON_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" v
 <path stroke-width="24" stroke-linecap="round" fill="none" stroke="#ffcc00" d="M340 137H410"/>
 <path stroke-width="24" stroke-linecap="round" fill="none" stroke="#ffcc00" d="M375 102V172"/>
 </g>
+'''
+
+# Transparent version — used ONLY on the website (login/headers) via React component & svg file.
+TRANSPARENT_SVG = f'''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">{ART}</svg>'''
+
+# App / install icon — YELLOW squircle background.
+APP_SVG = f'''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<rect x="0" y="0" width="512" height="512" rx="120" fill="#FFCC00"/>
+{ART}
+</svg>'''
+
+# Maskable — full yellow square, artwork scaled down for the safe zone.
+MASKABLE_SVG = f'''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<rect x="0" y="0" width="512" height="512" fill="#FFCC00"/>
+<g transform="translate(256,256) scale(0.82) translate(-263,-256)">{ART}</g>
 </svg>'''
 
 
@@ -26,13 +41,16 @@ def render(svg, w, h):
     return cairosvg.svg2png(bytestring=svg.encode("utf-8"), output_width=w, output_height=h)
 
 
-(PUB / "smarttime-icon.svg").write_text(ICON_SVG, encoding="utf-8")
-(PUB / "icon-192.png").write_bytes(render(ICON_SVG, 192, 192))
-(PUB / "icon-512.png").write_bytes(render(ICON_SVG, 512, 512))
-(PUB / "icon-maskable-512.png").write_bytes(render(ICON_SVG, 512, 512))
-(PUB / "apple-touch-icon.png").write_bytes(render(ICON_SVG, 180, 180))
+# Website icon (transparent)
+(PUB / "smarttime-icon.svg").write_text(TRANSPARENT_SVG, encoding="utf-8")
 
-img = Image.open(BytesIO(render(ICON_SVG, 256, 256))).convert("RGBA")
+# App / install icons (yellow)
+(PUB / "icon-192.png").write_bytes(render(APP_SVG, 192, 192))
+(PUB / "icon-512.png").write_bytes(render(APP_SVG, 512, 512))
+(PUB / "icon-maskable-512.png").write_bytes(render(MASKABLE_SVG, 512, 512))
+(PUB / "apple-touch-icon.png").write_bytes(render(APP_SVG, 180, 180))
+
+img = Image.open(BytesIO(render(APP_SVG, 256, 256))).convert("RGBA")
 img.save(PUB / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
 
-print("Transparent icons regenerated.")
+print("Icons: website=transparent, app/install=yellow. Regenerated.")
