@@ -13,7 +13,7 @@ export default function ThemeToggle({ className = "" }) {
       title={dark ? "Modo claro" : "Modo escuro"}
       className={`inline-flex items-center justify-center h-10 w-10 rounded-full border border-slate-200 bg-white text-slate-600 hover:text-[#D40511] hover:border-[#FFCC00] transition-colors ${className}`}
     >
-      {dark ? <Sun size={18} /> : <Moon size={18} />}
+      {dark ? <Moon size={18} /> : <Sun size={18} />}
     </button>
   );
 }

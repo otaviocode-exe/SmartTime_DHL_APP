@@ -48,19 +48,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white">
-      {/* ---------- Left: clean DHL yellow panel ---------- */}
-      <div className="relative hidden lg:flex lg:w-1/2 bg-[#FFCC00] p-12 flex-col">
-        <div className="relative z-10">
-          <DhlLogo height={34} />
-        </div>
-        {/* subtle depth, no imagery / no text */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 42%)" }}
-        />
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
-          style={{ background: "linear-gradient(to top, rgba(224,180,0,0.55), transparent)" }}
+      {/* ---------- Left: SmartTime hero image ---------- */}
+      <div className="relative hidden lg:block lg:w-1/2 bg-[#FFCC00]">
+        <img
+          src="/login-hero.png"
+          alt="SmartTime — Gestão de Horas Extras DHL"
+          className="absolute inset-0 h-full w-full object-cover object-top"
         />
       </div>
 
@@ -112,25 +105,28 @@ export default function Login() {
                 <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Área de operação <span className="text-[#D40511]">*</span>
                 </Label>
-                <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
-                  {["I2M", "PKCG"].map((value) => {
-                    const active = area === value;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        data-testid={`area-${value.toLowerCase()}-btn`}
-                        onClick={() => setArea(value)}
-                        className={`h-9 rounded-md text-sm font-semibold transition-all ${
-                          active
-                            ? "bg-white text-[#D40511] shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    );
-                  })}
+                <div className="mt-2 flex items-center rounded-lg bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    data-testid="area-i2m-btn"
+                    onClick={() => setArea("I2M")}
+                    className={`flex-1 h-9 rounded-md text-sm font-semibold transition-all ${
+                      area === "I2M" ? "bg-white text-[#D40511] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    I2M
+                  </button>
+                  <span className="mx-1 h-5 w-px bg-slate-300" aria-hidden="true" />
+                  <button
+                    type="button"
+                    data-testid="area-pkcg-btn"
+                    onClick={() => setArea("PKCG")}
+                    className={`flex-1 h-9 rounded-md text-sm font-semibold transition-all ${
+                      area === "PKCG" ? "bg-white text-[#D40511] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    PKCG
+                  </button>
                 </div>
               </div>
 
