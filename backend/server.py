@@ -26,7 +26,6 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from integrations.dhl_ponto import get_ponto_adapter
 from integrations.adp_ponto import get_adp_adapter
 from integrations.storage import init_storage, put_object, get_object, APP_NAME as STORAGE_APP
-from integrations.ai_classifier import classify_motivo
 from integrations.push import public_key as vapid_public_key, send_push
 from integrations import colaboradores_db as colab_db
 from integrations.email import send_email, password_reset_html
@@ -134,7 +133,7 @@ Area = Literal["I2M", "PKCG", "ALL"]
 PENDING_SUP = "Pendente Supervisor"
 PENDING_GER = "Pendente Gerência"
 PENDING_STATUSES = [PENDING_SUP, PENDING_GER]
-CREATOR_ROLES = ("coordenador", "supervisor", "admin")
+CREATOR_ROLES = ("coordenador", "supervisor", "gerencia", "admin")
 
 class LoginIn(BaseModel):
     email: EmailStr
@@ -432,15 +431,6 @@ async def create_request(body: RequestCreateIn, user: dict = Depends(require_rol
     doc = await _validate_and_build_request(body.model_dump(), user)
     await db.requests.insert_one(doc)
     await _post_create(doc, user)
-
-    # Fire-and-forget AI classification of motivo
-    try:
-        categoria = await classify_motivo(body.motivo)
-        await db.requests.update_one({"id": doc["id"]}, {"$set": {"categoria_ia": categoria}})
-        doc["categoria_ia"] = categoria
-    except Exception as e:
-        logger.warning(f"AI classify failed: {e}")
-
     return _serialize_request(doc)
 
 class BulkColabIn(BaseModel):
@@ -461,11 +451,6 @@ class BulkCreateIn(BaseModel):
 @api.post("/requests/bulk-create")
 async def bulk_create(body: BulkCreateIn, user: dict = Depends(require_role(*CREATOR_ROLES))):
     results = {"created": [], "failed": []}
-    categoria = None
-    try:
-        categoria = await classify_motivo(body.motivo)
-    except Exception:
-        pass
     for c in body.colaboradores:
         item = {
             "colaborador": c.colaborador, "matricula": c.matricula,
@@ -475,8 +460,6 @@ async def bulk_create(body: BulkCreateIn, user: dict = Depends(require_role(*CRE
         }
         try:
             doc = await _validate_and_build_request(item, user)
-            if categoria:
-                doc["categoria_ia"] = categoria
             await db.requests.insert_one(doc)
             await _post_create(doc, user)
             results["created"].append({"matricula": c.matricula, "colaborador": c.colaborador, "numero": doc["numero"]})
@@ -994,7 +977,6 @@ async def request_pdf(req_id: str, user: dict = Depends(get_current_user)):
         ["Data da hora extra", doc.get("data", "—")],
         ["Horário", f"{doc.get('hora_inicial','—')} — {doc.get('hora_final','—')}"],
         ["Total de horas", f"{doc.get('total_horas', 0)} h"],
-        ["Categoria (IA)", (doc.get("categoria_ia") or "—").replace("_", " ")],
     ]
     t = Table(rows, colWidths=[6*cm, 11*cm])
     t.setStyle(TableStyle([

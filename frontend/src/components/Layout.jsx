@@ -34,6 +34,8 @@ const supervisorNav = [
 const gerenciaNav = [
   { to: "/gerencia", icon: LayoutDashboard, label: "Dashboard", short: "Início", end: true, testid: "nav-gerencia-dashboard" },
   { to: "/gerencia/aprovacoes", icon: ClipboardList, label: "Aprovações", short: "Aprovar", testid: "nav-aprovacoes", badgeKey: "pending" },
+  { to: "/gerencia/nova", icon: FilePlus2, label: "Nova Solicitação", short: "Nova", testid: "nav-nova-solicitacao" },
+  { to: "/gerencia/minhas", icon: ListTodo, label: "Minhas Solicitações", short: "Minhas", testid: "nav-minhas-solicitacoes" },
   { to: "/gerencia/historico", icon: History, label: "Histórico", short: "Hist.", testid: "nav-historico" },
   { to: "/gerencia/usuarios", icon: Users, label: "Usuários", short: "Users", testid: "nav-usuarios" },
   { to: "/gerencia/auditoria", icon: ScrollText, label: "Auditoria", short: "Audit.", testid: "nav-auditoria" },

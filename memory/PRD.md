@@ -63,3 +63,12 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
   - Frontend: páginas `/forgot-password` e `/reset-password`; botão "Esqueceu sua senha?" no login agora navega para o fluxo.
   - Testado E2E: link gerado → token de uso único → senha alterada → login com nova senha OK → senha antiga rejeitada.
 - **Modo escuro completo**: `ThemeToggle.jsx` (Sol/Lua) adicionado no topo do login e dos cabeçalhos do Layout (notebook/tablet/celular). `ThemeContext` persiste em localStorage; overrides globais em `index.css` (classe `theme-dark`) cobrem cards, textos, inputs, bordas e preservam as cores DHL.
+
+## Gerente solicita + aprova (Set/2026)
+- Gerência agora pode **criar solicitações** de hora extra (para qualquer colaborador). `CREATOR_ROLES` inclui `gerencia`. A solicitação nasce como **"Pendente Gerência"** e cai na fila de **Aprovações**, onde o próprio Gerente aprova (fluxo de 2 passos, escolha do usuário).
+- Limite de 2h (CLT) e bloqueio de 24h por rejeição continuam valendo para a Gerência.
+- Frontend: novos itens de menu `Nova Solicitação` e `Minhas Solicitações` no `gerenciaNav` (`Layout.jsx`) + rotas `/gerencia/nova` e `/gerencia/minhas` (`App.js`). Subtítulo específico da Gerência em `NovaSolicitacao.jsx`. Rótulo de papel do solicitante em `Aprovacoes.jsx` agora trata "Gerência".
+- Validado E2E via API: login gerência → criar (Pendente Gerência) → aparece em pendentes → aprovar (Aprovada) → aparece em "Minhas".
+
+## Remoção da Categorização por IA (Set/2026)
+- A pedido do usuário, **removida a categorização automática por IA (Claude Sonnet 4.6)**. Removidos: import e chamadas `classify_motivo` em `create_request`/`bulk_create`, campo `categoria_ia`, linha "Categoria (IA)" no PDF (`server.py`) e badges "🤖 IA" no frontend (`Aprovacoes.jsx`, `MinhasSolicitacoes.jsx`). Novas solicitações não gravam mais `categoria_ia`. (Arquivo `integrations/ai_classifier.py` permanece no repo, mas não é mais importado.)

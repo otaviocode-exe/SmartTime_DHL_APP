@@ -207,7 +207,9 @@ export default function NovaSolicitacao() {
           Nova Solicitação de Horas Extras
         </h1>
         <p className="text-slate-500 mt-1">
-          {user?.role === "supervisor"
+          {user?.role === "gerencia"
+            ? "Sua solicitação vai direto para a fila de Aprovações da Gerência, onde você mesmo poderá aprová-la."
+            : user?.role === "supervisor"
             ? "Sua solicitação segue direto para o OK da Gerência."
             : "Sua solicitação passa pelo Supervisor da área e depois pela Gerência."}
         </p>
