@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 3 validation of SmartTime new features: (a) Gerência is now a creator + self-approver, (b) new 515-collaborator DB from 2-tab Excel (DHL=I2M, EXPERT=PKCG) with turma/turma_hora_inicial/turma_hora_final, (c) HE calculated from escala saída (input-hora-inicial locked), (d) IA classifier removed. Backend: 82/84 tests pass (2 real failures — see below). Frontend: ALL requested flows pass, including the Solicitação em Massa regression (loop crash from iteration 2 is FIXED — clicking 1 and 2 collaborators works, count updates to '2 selecionado(s)'). Gerência full flow works end-to-end via UI (nav-nova-solicitacao and nav-minhas-solicitacoes present, matricula 9875135 auto-fills escala 22:00-06:10, hora_inicial locked at 06:10, hora_final 08:10, total 2.00h, submit redirects to /gerencia/minhas). No 'Categoria IA' / '🤖 IA' badge in Aprovações or Minhas Solicitações.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/requests", "issue": "Area fallback for unknown matriculas defaults to I2M regardless of setor or creator area. Coord PKCG posting with a PKCG setor and a random matricula (not in colab_db) yields area='I2M' in the response. Consequence: PKCG-created requests become invisible to PKCG supervisors and approvable by I2M supervisors -> breaks area segregation. Root cause: after the switch to `colab_db.find_by_matricula(matricula) -> rec['area']`, the fallback branch (matricula not found) hardcodes/uses I2M instead of the creator's area or the setor's area. Fix: when colab lookup misses, fall back to `current_user.area` (or infer from setor as before). Reproduces reliably: TEST_ matriculas + PKCG setor -> area=I2M.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/requests", "issue": "Legacy field `categoria_ia` (e.g. 'operacional') still leaks in responses for OLD requests that were created before IA was removed. server.py no longer sets it, but Mongo docs still contain it and are returned as-is. Fix: strip `categoria_ia` in the serializer OR run a one-off `$unset` migration. Impact is limited because the UI already hides the badge, but the spec says 'nenhuma resposta ... deve conter categoria_ia preenchido'."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "NovaSolicitacao / SolicitacaoMassa", "issues": ["Native browser date/time inputs still used instead of shadcn Calendar (carry-over from iter 2, not blocking)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3_features.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/conftest.py"
+  ],
+  "action_items": [
+    "CRITICAL: fix area fallback in POST /api/requests (_validate_and_build_request) — when colab_db.find_by_matricula(matricula) returns None, use current_user.area (or map from setor) instead of defaulting to I2M. This is a real segregation bug: PKCG coordenadores creating requests for a matricula not in the 515-list end up with area='I2M'.",
+    "MINOR: strip legacy `categoria_ia` from Mongo docs before returning (or one-shot $unset migration) so no response contains it.",
+    "(Carry-over) shadcn Calendar/Time pickers instead of native inputs where feasible."
+  ],
+  "critical_code_review_comments": [
+    "server.py POST /api/requests: area assignment branch when matricula is unknown to colab_db must not silently default to I2M — use current_user.area as fallback and/or infer from setor. Silent default breaks area isolation and can allow cross-area supervisor decisions.",
+    "server.py list endpoints: responses include ad-hoc Mongo fields (`categoria_ia`) for legacy documents. Add an explicit response model or drop unknown fields to prevent leaking removed features.",
+    "server.py remains 1200+ LOC — still worth splitting into routers (unchanged from iter 2).",
+    "colaboradores_db.py: area is now derived from Excel tab (DHL/EXPERT) which is correct; verified 507 DHL / 9 EXPERT = 515 total via GET /api/colaboradores as gerência (>=500 asserted). turma/turma_hora_inicial/turma_hora_final all populated (9875135 -> 22:00-06:10; 174528 present)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration3_features.py (new)"
+  ],
+  "success_rate": {"backend": "82/84 (97.6%) — 1 CRITICAL area-fallback, 1 minor legacy categoria_ia leak; 1 xfail (brute-force lockout) unchanged", "frontend": "100% of requested flows (Gerência create + self-approve, escala auto-fill + locked hora_inicial, name autocomplete, no IA badge, massa no-loop regression)"},
+  "test_credentials": "/app/memory/test_credentials.md is present and complete; all 6 accounts authenticate (login payload requires area).",
+  "seed_data_creation": "Created 1 request via UI as Gerência (ABNER HENRIQUES EMILIANO / 9875135, 2h, motivo 'TEST_ Teste Gerência criando'). Backend pytest also created a few TEST_ requests; pytest_sessionfinish hook purges them (see conftest.py). NOTE: an ADP-mock warning ('Colaborador já está em hora extra agora (SIMULADO)') is shown correctly on the form when creating for 9875135.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run backend suite: `cd /app/backend && python -m pytest tests/ -o addopts=\"\" -v` (or keep xdist via default addopts). Key selectors verified in UI: nav-nova-solicitacao, nav-minhas-solicitacoes, nav-aprovacoes, input-matricula (blur triggers lookup), escala-info card, input-hora-inicial (disabled when escala present, value=escala.saida), input-hora-final (=saida+2h), total-horas (shows 2.00h), he-2h-btn (re-applies 2h from escala), input-colaborador (2+ chars -> suggestion-<matricula>), submit-request-btn, massa-colab-<matricula> (fixed, no infinite loop), massa-selected-count. Backend routes confirmed: GET /api/integrations/ponto/colaborador/9875135 -> nome ABNER HENRIQUES EMILIANO, turma_hora_inicial=22:00, turma_hora_final=06:10; GET /api/colaboradores/search?q=ADRIAN returns list with `area` field; GET /api/colaboradores as gerência returns >=500 items. STILL PENDING: fix the area-fallback bug and re-run TestAreaSegregation (3 legacy tests fail today because of it: test_pkcg_request_gets_pkcg_area, test_supervisor_cannot_decide_other_area, test_individual_pdf_has_no_sonic).",
+  "rca_of_the_issue": "AREA FALLBACK BUG — after the refactor that derives request.area from colab_db.find_by_matricula(matricula)['area'], the code path for matriculas not present in the new 515-list falls back to I2M (probably `.get('area', 'I2M')` or an unconditional literal). Symptom: coord_pkcg posts a request with a PKCG setor and a random matricula and receives area='I2M' in the response, so the record is invisible to PKCG supervisors and can be approved by I2M supervisors. Reproduction: login coord_pkcg (coordenador.pkcg@dhl.com/coord123, area=PKCG); POST /api/requests with a fresh matricula (e.g. TST123456) and setor from GET /api/colaboradores/setores; observe response.area == 'I2M'. Fix: change the fallback to `current_user.area` (already scoped to the creator's area) — the previous setor-based inference also works. Legacy categoria_ia leak: server no longer writes the field but old docs still carry it; add a projection/serializer that drops it or run `db.requests.update_many({'categoria_ia': {'$exists': True}}, {'$unset': {'categoria_ia': ''}})`."
+}

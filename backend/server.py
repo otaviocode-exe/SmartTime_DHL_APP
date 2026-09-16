@@ -332,6 +332,7 @@ async def delete_user(user_id: str, current: dict = Depends(require_role("gerenc
 # ---------------- Overtime Requests ----------------
 def _serialize_request(doc: dict) -> dict:
     doc.pop("_id", None)
+    doc.pop("categoria_ia", None)  # recurso de IA removido — não vazar campo legado
     return doc
 
 def _area_of(setor: str, fallback: str = "I2M") -> str:
@@ -395,7 +396,12 @@ async def _validate_and_build_request(body_dict: dict, user: dict) -> dict:
 
     initial_status = PENDING_SUP if user["role"] == "coordenador" else PENDING_GER
     rec = colab_db.find_by_matricula(matricula)
-    area = rec["area"] if rec else _area_of(body_dict.get("setor", ""), user.get("area", "I2M"))
+    if rec:
+        area = rec["area"]
+    elif user.get("area") in ("I2M", "PKCG"):
+        area = user["area"]
+    else:
+        area = _area_of(body_dict.get("setor", ""), "I2M")
 
     return {
         "id": str(uuid.uuid4()),
@@ -474,7 +480,7 @@ async def block_status(matricula: str, _u: dict = Depends(get_current_user)):
 
 @api.get("/requests/mine")
 async def my_requests(user: dict = Depends(require_role(*CREATOR_ROLES))):
-    docs = await db.requests.find({"gestor_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    docs = await db.requests.find({"gestor_id": user["id"]}, {"_id": 0, "categoria_ia": 0}).sort("created_at", -1).to_list(1000)
     return docs
 
 @api.get("/requests")
@@ -494,7 +500,7 @@ async def all_requests(status: Optional[str] = None,
         q["area"] = user["area"]
     elif area and area != "all":
         q["area"] = area
-    docs = await db.requests.find(q, {"_id": 0}).sort("created_at", -1).to_list(2000)
+    docs = await db.requests.find(q, {"_id": 0, "categoria_ia": 0}).sort("created_at", -1).to_list(2000)
     return docs
 
 @api.get("/requests/stats")

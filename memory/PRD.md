@@ -71,4 +71,13 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
 - Validado E2E via API: login gerência → criar (Pendente Gerência) → aparece em pendentes → aprovar (Aprovada) → aparece em "Minhas".
 
 ## Remoção da Categorização por IA (Set/2026)
-- A pedido do usuário, **removida a categorização automática por IA (Claude Sonnet 4.6)**. Removidos: import e chamadas `classify_motivo` em `create_request`/`bulk_create`, campo `categoria_ia`, linha "Categoria (IA)" no PDF (`server.py`) e badges "🤖 IA" no frontend (`Aprovacoes.jsx`, `MinhasSolicitacoes.jsx`). Novas solicitações não gravam mais `categoria_ia`. (Arquivo `integrations/ai_classifier.py` permanece no repo, mas não é mais importado.)
+- A pedido do usuário, **removida a categorização automática por IA (Claude Sonnet 4.6)**. Removidos: import e chamadas `classify_motivo` em `create_request`/`bulk_create`, campo `categoria_ia`, linha "Categoria (IA)" no PDF (`server.py`) e badges "🤖 IA" no frontend (`Aprovacoes.jsx`, `MinhasSolicitacoes.jsx`). `_serialize_request` e as projeções das listas removem `categoria_ia`; migração `$unset` limpou 11 docs legados. Novas solicitações não gravam mais `categoria_ia`.
+
+## Nova base de colaboradores + cálculo de HE pela escala (Set/2026)
+- Base substituída pela planilha **"Head DHL e Agências"** (`/app/backend/data/colaboradores.xlsx`), com 2 abas: **DHL** (Head, 506 → área **I2M**) e **EXPERT** (Agências, 9 → área **PKCG**). Total **515** colaboradores. Parser reescrito (`colaboradores_db.py`) lê por nome de coluna; escala vem da coluna **"Horário"** (1º horário = entrada, último = saída); "Turma - Descrição" é texto informativo; turno é deduzido pela hora de entrada.
+- **Área agora vem do colaborador** (`find_by_matricula(mat)['area']`). Fallback quando a matrícula não está na base: usa a **área do criador** (I2M/PKCG) e, se ALL, infere pelo setor. (Corrigido bug de segregação onde caía sempre em I2M.)
+- **Regra da HE**: a hora extra só pode ocorrer **APÓS o colaborador bater o ponto de saída** — inicia no horário de **saída da escala** e vai até no **máximo 2h**. No formulário (`NovaSolicitacao.jsx`): ao selecionar/consultar a matrícula, o card "Escala atual" aparece, `hora_inicial` é travado na saída (input desabilitado), `hora_final` = saída+2h; botão "Preencher 2h"; validação no submit exige `hora_inicial === saída`. Limite de 2h e bloqueio de 24h mantidos.
+- E2E validado (iteration_3.json): frontend 100% dos fluxos (Gerente cria+aprova, escala auto-preenchida, sem badge IA, Solicitação em Massa sem loop). Backend: fixes de área e categoria_ia validados via curl (coord PKCG + matrícula desconhecida → area PKCG).
+
+## Pendente de decisão do usuário
+- Pedido "compactar o app para um Power App" — aguardando escolha entre: (a) blueprint de reconstrução no Power Apps, (b) embutir o React no Power Apps/Teams, (c) deixar o app mais enxuto, (d) outro objetivo.
