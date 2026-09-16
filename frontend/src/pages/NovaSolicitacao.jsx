@@ -174,6 +174,10 @@ export default function NovaSolicitacao() {
       toast.error("Limite excedido — contate o supervisor/gerente.");
       return;
     }
+    if (escala && form.hora_inicial !== escala.saida) {
+      toast.error(`A hora extra deve iniciar às ${escala.saida} (saída da escala), somente após bater o ponto.`);
+      return;
+    }
     if (block24h) {
       toast.error("Colaborador bloqueado por rejeição nas últimas 24h.");
       return;
@@ -310,6 +314,7 @@ export default function NovaSolicitacao() {
                 <Select
                   value={form.turno}
                   onValueChange={(v) => {
+                    if (escala) { setForm({ ...form, turno: v }); return; }
                     const h = TURNO_HORARIOS[v] || {};
                     setForm({
                       ...form,
@@ -350,21 +355,16 @@ export default function NovaSolicitacao() {
                       {escala.turma && <span className="text-slate-500"> · {escala.turma}</span>}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">
-                      A hora extra pode ser <b>antes da entrada</b> ou <b>após a saída</b> — no máximo 2h.
+                      A hora extra começa no horário de <b>saída ({escala.saida})</b>, somente
+                      <b> após bater o ponto</b>, e pode ir até no máximo 2h (até <b>{addMin(escala.saida, 120)}</b>).
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button
-                      type="button" variant="outline" size="sm" data-testid="he-antes-btn"
-                      onClick={() => setForm((p) => ({ ...p, hora_inicial: addMin(escala.entrada, -120), hora_final: escala.entrada }))}
-                    >
-                      HE antes (2h)
-                    </Button>
-                    <Button
-                      type="button" variant="outline" size="sm" data-testid="he-depois-btn"
+                      type="button" variant="outline" size="sm" data-testid="he-2h-btn"
                       onClick={() => setForm((p) => ({ ...p, hora_inicial: escala.saida, hora_final: addMin(escala.saida, 120) }))}
                     >
-                      HE após (2h)
+                      Preencher 2h
                     </Button>
                   </div>
                 </div>
@@ -375,10 +375,10 @@ export default function NovaSolicitacao() {
               <Field label="Data" required>
                 <Input required type="date" data-testid="input-data" value={form.data} onChange={set("data")} />
               </Field>
-              <Field label="Hora Inicial" required>
-                <Input required type="time" data-testid="input-hora-inicial" value={form.hora_inicial} onChange={set("hora_inicial")} />
+              <Field label="Hora Inicial (saída da escala)" required>
+                <Input required type="time" data-testid="input-hora-inicial" value={form.hora_inicial} onChange={set("hora_inicial")} disabled={!!escala} />
               </Field>
-              <Field label="Hora Final" required>
+              <Field label="Hora Final (máx. +2h)" required>
                 <Input required type="time" data-testid="input-hora-final" value={form.hora_final} onChange={set("hora_final")} />
               </Field>
               <Field label="Total (Horas)">
