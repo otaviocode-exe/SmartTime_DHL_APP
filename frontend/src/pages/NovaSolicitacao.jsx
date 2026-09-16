@@ -26,6 +26,18 @@ function calcHoras(hi, hf) {
   return Math.round((mins / 60) * 100) / 100;
 }
 
+function toMin(hhmm) {
+  const [h, m] = String(hhmm || "").split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function addMin(hhmm, mins) {
+  let t = (toMin(hhmm) + mins) % 1440;
+  if (t < 0) t += 1440;
+  const h = Math.floor(t / 60), m = t % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 const TURNO_HORARIOS = {
   T1:  { hora_inicial: "14:00", hora_final: "16:00" },
   T2:  { hora_inicial: "22:00", hora_final: "00:00" },
@@ -54,6 +66,7 @@ export default function NovaSolicitacao() {
   const [showSug, setShowSug] = useState(false);
   const [adpAlert, setAdpAlert] = useState(null);
   const [block24h, setBlock24h] = useState(null);
+  const [escala, setEscala] = useState(null);
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
   const sugTimerRef = useRef(null);
@@ -83,16 +96,16 @@ export default function NovaSolicitacao() {
   };
 
   const applyColab = (c) => {
+    const entrada = c.turma_hora_inicial || "";
+    const saida = c.turma_hora_final || "";
+    setEscala(entrada && saida ? { entrada, saida, turma: c.turma || "" } : null);
     setForm((prev) => ({
       ...prev,
       matricula: c.matricula || prev.matricula,
       colaborador: c.nome || prev.colaborador,
       setor: c.setor || prev.setor,
       turno: c.turno || prev.turno,
-      ...(c.turno && TURNO_HORARIOS[c.turno] ? {
-        hora_inicial: TURNO_HORARIOS[c.turno].hora_inicial,
-        hora_final: TURNO_HORARIOS[c.turno].hora_final,
-      } : {}),
+      ...(saida ? { hora_inicial: saida, hora_final: addMin(saida, 120) } : {}),
     }));
     setSuggestions([]);
     setShowSug(false);
@@ -134,16 +147,16 @@ export default function NovaSolicitacao() {
     checkMatricula(m);
     try {
       const { data } = await api.get(`/integrations/ponto/colaborador/${encodeURIComponent(m)}`);
+      const entrada = data.turma_hora_inicial || "";
+      const saida = data.turma_hora_final || "";
+      setEscala(entrada && saida ? { entrada, saida, turma: data.turma || "" } : null);
       // Auto-fill only empty fields to avoid overriding user edits
       setForm((prev) => ({
         ...prev,
         colaborador: prev.colaborador || data.nome || "",
         setor: prev.setor || data.setor || "",
-        turno: prev.turno === "ADM" && data.turno ? data.turno : prev.turno,
-        ...(data.turno && TURNO_HORARIOS[data.turno] ? {
-          hora_inicial: TURNO_HORARIOS[data.turno].hora_inicial,
-          hora_final: TURNO_HORARIOS[data.turno].hora_final,
-        } : {}),
+        turno: data.turno || prev.turno,
+        ...(saida ? { hora_inicial: saida, hora_final: addMin(saida, 120) } : {}),
       }));
       toast.success(`Colaborador ${data.nome} encontrado`);
     } catch (_) {
@@ -321,6 +334,42 @@ export default function NovaSolicitacao() {
                 <Input data-testid="input-setor" value={form.setor} onChange={set("setor")} placeholder="Ex.: Operações" />
               </Field>
             </div>
+
+            {escala && (
+              <div
+                data-testid="escala-info"
+                className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <div className="uppercase tracking-[0.1em] text-[10px] font-bold text-slate-500">
+                      Escala atual do colaborador
+                    </div>
+                    <div className="mt-1 text-sm text-slate-800">
+                      Entrada <b>{escala.entrada}</b> · Saída <b>{escala.saida}</b>
+                      {escala.turma && <span className="text-slate-500"> · {escala.turma}</span>}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      A hora extra pode ser <b>antes da entrada</b> ou <b>após a saída</b> — no máximo 2h.
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      type="button" variant="outline" size="sm" data-testid="he-antes-btn"
+                      onClick={() => setForm((p) => ({ ...p, hora_inicial: addMin(escala.entrada, -120), hora_final: escala.entrada }))}
+                    >
+                      HE antes (2h)
+                    </Button>
+                    <Button
+                      type="button" variant="outline" size="sm" data-testid="he-depois-btn"
+                      onClick={() => setForm((p) => ({ ...p, hora_inicial: escala.saida, hora_final: addMin(escala.saida, 120) }))}
+                    >
+                      HE após (2h)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
               <Field label="Data" required>

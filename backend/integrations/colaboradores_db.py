@@ -6,13 +6,20 @@ PARA ATUALIZAR A LISTA DE COLABORADORES:
   2. Chame o endpoint POST /api/colaboradores/reload  (auth: gerência/admin)
      — OU simplesmente reinicie o backend (`sudo supervisorctl restart backend`).
 
-O arquivo deve ter as colunas (nomes exatos, com espaços):
-  - "Matrícula"
-  - "Nome"                       (nome do colaborador)
-  - "Nome"                       (2ª coluna Nome = SETOR, ex.: "UNILEVER VINHEDO - EXPEDICAO")
-  - "Turma - Descrição"          (horário/turno, ex.: "22:00 - 06:10 SEG. a SAB.")
+O arquivo "Head DHL e Agências" possui DUAS abas:
 
-O TURNO (T1/T2/T3/ADM) é DEDUZIDO da coluna "Turma - Descrição" pela hora inicial.
+  Aba "DHL" (Head)  -> Área I2M
+    - "Matrícula"            (nº)
+    - "Nome"  (1ª ocorrência = nome do colaborador)
+    - "Nome"  (2ª ocorrência = SETOR/estabelecimento, ex.: "UNILEVER VINHEDO - EXPEDICAO")
+    - "Turma - Descrição"    (texto informativo da escala, ex.: "22:00 - 06:10 (6x2) VINHEDO - B")
+    - "Horário"              (entrada/intervalo/saída, ex.: "22:00 01:00 02:00 06:10")
+
+  Aba "EXPERT" (Agências) -> Área PKCG
+    - "Matrícula", "Nome", "Função", "Turno" (ex.: "22:00 - 06:00")
+
+Escala usada no cálculo de HE: 1º horário = ENTRADA, último horário = SAÍDA (coluna "Horário").
+O TURNO (T1/T2/T3/ADM) é DEDUZIDO pela hora de entrada.
 """
 from __future__ import annotations
 import re
@@ -30,49 +37,125 @@ _cache: list[dict] = []
 _by_mat: dict[str, dict] = {}
 _by_name: dict[str, dict] = {}
 
+_TIME_RE = re.compile(r"(\d{1,2}:\d{2})")
 
-def _infer_turno(turma: str) -> str:
-    m = re.match(r"\s*(\d{1,2}):(\d{2})", turma or "")
+
+def _infer_turno_from_entrada(entrada: str) -> str:
+    m = re.match(r"\s*(\d{1,2}):(\d{2})", entrada or "")
     if not m:
         return "ADM"
     h = int(m.group(1))
     if 5 <= h < 12:   return "T3"    # manhã (ex.: 06:00)
-    if 12 <= h < 17:  return "T1"    # tarde (ex.: 13:50)
+    if 12 <= h < 17:  return "T1"    # tarde (ex.: 13:40)
     if 17 <= h < 21:  return "ADM"   # comercial
     return "T2"                      # noite (>= 21 ou madrugada)
 
 
-def _turno_horario(turma: str) -> tuple[str, str]:
-    m = re.match(r"\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})", turma or "")
-    if not m:
+def _entrada_saida(horario: str) -> tuple[str, str]:
+    """Extrai (entrada, saída) da coluna Horário: 1º horário e último horário."""
+    times = _TIME_RE.findall(horario or "")
+    if not times:
         return "", ""
-    return m.group(1), m.group(2)
-
-
-def _normalize(rec: dict) -> dict:
-    mat = str(int(rec.get("Matrícula", 0))) if rec.get("Matrícula") else ""
-    # The Excel has TWO columns literally named "Nome" — pandas suffixes them.
-    # After lstrip/normalization pandas keeps distinct keys via trailing spaces.
-    # We normalize by iterating original columns externally (see load_from_excel).
-    nome = rec.get("_nome", "").strip()
-    setor = rec.get("_setor", "").strip()
-    turma = rec.get("_turma", "").strip()
-    turno = _infer_turno(turma)
-    hi, hf = _turno_horario(turma)
-    return {
-        "matricula": mat,
-        "nome": nome,
-        "setor": setor,
-        "area": area_from_setor(setor),
-        "turma": turma,
-        "turno": turno,
-        "turma_hora_inicial": hi,
-        "turma_hora_final": hf,
-    }
+    return times[0], times[-1]
 
 
 def area_from_setor(setor: str) -> str:
+    """Fallback de área quando o colaborador não está na base."""
     return "PKCG" if "SONIC" in (setor or "").upper() else "I2M"
+
+
+def area_from_matricula(mat: str) -> Optional[str]:
+    rec = _by_mat.get(str(mat).strip())
+    return rec["area"] if rec else None
+
+
+def _mat_str(v) -> str:
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return ""
+    try:
+        return str(int(v))
+    except (ValueError, TypeError):
+        return str(v).strip()
+
+
+def _clean(v) -> str:
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return ""
+    return str(v).strip()
+
+
+def _build_record(matricula: str, nome: str, setor: str, turma: str,
+                  horario: str, area: str) -> dict:
+    hi, hf = _entrada_saida(horario or turma)
+    return {
+        "matricula": matricula,
+        "nome": nome,
+        "setor": setor,
+        "area": area,
+        "turma": turma,                 # "Turma - Descrição" (informativo)
+        "turno": _infer_turno_from_entrada(hi),
+        "turma_hora_inicial": hi,       # ENTRADA da escala
+        "turma_hora_final": hf,         # SAÍDA da escala
+    }
+
+
+def _load_dhl(path: Path) -> list[dict]:
+    raw = pd.read_excel(path, sheet_name="DHL", header=None)
+    hdr = [str(x).strip() for x in raw.iloc[0].tolist()]
+
+    def idx(name: str, occ: int = 0):
+        found = [i for i, h in enumerate(hdr) if h.lower() == name.lower()]
+        return found[occ] if len(found) > occ else None
+
+    i_mat = idx("Matrícula")
+    i_nome = idx("Nome", 0)
+    i_setor = idx("Nome", 1)            # 2ª coluna "Nome" = setor/estabelecimento
+    i_turma = idx("Turma - Descrição")
+    i_hor = idx("Horário")
+
+    recs = []
+    for _, row in raw.iloc[1:].iterrows():
+        mat = _mat_str(row[i_mat]) if i_mat is not None else ""
+        nome = _clean(row[i_nome]) if i_nome is not None else ""
+        if not mat and not nome:
+            continue
+        setor = _clean(row[i_setor]) if i_setor is not None else ""
+        turma = _clean(row[i_turma]) if i_turma is not None else ""
+        horario = _clean(row[i_hor]) if i_hor is not None else ""
+        recs.append(_build_record(mat, nome, setor, turma, horario, area="I2M"))
+    return recs
+
+
+def _load_expert(path: Path) -> list[dict]:
+    try:
+        raw = pd.read_excel(path, sheet_name="EXPERT", header=None)
+    except (ValueError, KeyError):
+        return []
+    hdr = [str(x).strip() for x in raw.iloc[0].tolist()]
+
+    def idx(name: str):
+        for i, h in enumerate(hdr):
+            if h.lower() == name.lower():
+                return i
+        return None
+
+    i_mat = idx("Matrícula")
+    i_nome = idx("Nome")
+    i_func = idx("Função")
+    i_turno = idx("Turno")
+
+    recs = []
+    for _, row in raw.iloc[1:].iterrows():
+        mat = _mat_str(row[i_mat]) if i_mat is not None else ""
+        nome = _clean(row[i_nome]) if i_nome is not None else ""
+        if not mat and not nome:
+            continue
+        func = _clean(row[i_func]) if i_func is not None else ""
+        turno_txt = _clean(row[i_turno]) if i_turno is not None else ""
+        setor = f"AGÊNCIAS · {func}".strip(" ·") if func else "AGÊNCIAS"
+        # Para EXPERT, "Turno" já é "HH:MM - HH:MM" (entrada - saída).
+        recs.append(_build_record(mat, nome, setor, turno_txt, turno_txt, area="PKCG"))
+    return recs
 
 
 def load_from_excel(path: Path | str | None = None) -> int:
@@ -83,32 +166,20 @@ def load_from_excel(path: Path | str | None = None) -> int:
         _cache, _by_mat, _by_name = [], {}, {}
         return 0
 
-    df = pd.read_excel(path)
-    # Rename columns robustly (Excel has trailing spaces + duplicate "Nome")
-    cols = list(df.columns)
-    # First occurrence of "Nome" = colaborador; second = setor
-    nome_idx = [i for i, c in enumerate(cols) if str(c).strip().lower() == "nome"]
-    df = df.rename(columns={
-        cols[0]: "Matrícula",
-        cols[nome_idx[0]]: "_nome",
-        cols[nome_idx[1]]: "_setor" if len(nome_idx) > 1 else "_nome_2",
-        cols[-1]: "_turma",
-    })
-
-    recs = []
-    for _, row in df.iterrows():
-        try:
-            rec = _normalize(row.to_dict())
-        except Exception:
-            continue
-        if not rec["matricula"] and not rec["nome"]:
-            continue
-        recs.append(rec)
+    recs: list[dict] = []
+    try:
+        recs.extend(_load_dhl(path))
+    except Exception as e:
+        logger.warning(f"Falha ao ler aba DHL: {e}")
+    try:
+        recs.extend(_load_expert(path))
+    except Exception as e:
+        logger.warning(f"Falha ao ler aba EXPERT: {e}")
 
     _cache = recs
     _by_mat = {r["matricula"]: r for r in recs if r["matricula"]}
     _by_name = {r["nome"].upper(): r for r in recs if r["nome"]}
-    logger.info(f"Colaboradores carregados: {len(recs)}")
+    logger.info(f"Colaboradores carregados: {len(recs)} (I2M/DHL + PKCG/EXPERT)")
     return len(recs)
 
 

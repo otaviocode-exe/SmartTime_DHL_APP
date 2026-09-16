@@ -394,7 +394,8 @@ async def _validate_and_build_request(body_dict: dict, user: dict) -> dict:
             )
 
     initial_status = PENDING_SUP if user["role"] == "coordenador" else PENDING_GER
-    area = _area_of(body_dict.get("setor", ""), user.get("area", "I2M"))
+    rec = colab_db.find_by_matricula(matricula)
+    area = rec["area"] if rec else _area_of(body_dict.get("setor", ""), user.get("area", "I2M"))
 
     return {
         "id": str(uuid.uuid4()),
