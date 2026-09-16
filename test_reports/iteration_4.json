@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend UI testing of Solicitação em Massa refactor (fixed times -> duração) and Gerência access. All 5 scenarios PASSED. Gerência (gerente@dhl.com/gerente123) sees 'Solicitação em Massa' in sidebar and /gerencia/massa opens correctly with duração selector (no Hora Inicial/Final fields). Coordenador full flow: selected 2 ADRIAN collabs with different escalas (ADRIAN WISOSKI 14:10, ADRIANO REIS 22:10), duração=2h, submitted -> results returned per-collab distinct times: 14:10–16:10 and 22:10–00:10 (calculated from each collaborator's escala saída). Success toast '2 solicitação(ões) criada(s)'. No UI loop/freeze. NovaSolicitacao regression: input-hora-inicial ainda presente.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SolicitacaoMassa.jsx: submit clears selected only when fail===0, but após success submit-btn fica disabled (selected.size===0) — comportamento correto, apenas nota.",
+    "Console warnings (Recharts width/height -1) na Gerência Dashboard — não crítico mas indica container sem altura inicial em algum gráfico."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "gerente@dhl.com/gerente123 (I2M), gestor@dhl.com/gestor123 (I2M)",
+  "seed_data_creation": "2 solicitações criadas com motivo 'MASSA_TEST teste automatizado...' — pode ser limpo pelo main agent.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Massa duração feature works end-to-end on frontend. Backend já foi validado por curl anteriormente. Gerência agora tem acesso completo (nav + rota). Regressão do formulário individual OK (input-hora-inicial presente).",
+  "rca of the issue": "N/A - no issues found"
+}

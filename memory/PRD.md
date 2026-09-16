@@ -81,3 +81,8 @@ Sistema interno DHL para gerenciar solicitações de horas extras. Elimina email
 
 ## Pendente de decisão do usuário
 - Pedido "compactar o app para um Power App" — aguardando escolha entre: (a) blueprint de reconstrução no Power Apps, (b) embutir o React no Power Apps/Teams, (c) deixar o app mais enxuto, (d) outro objetivo.
+
+## Solicitação em Massa por duração + acesso da Gerência (Set/2026)
+- A Solicitação em Massa agora aplica a regra "HE após a saída" **por colaborador**: removidos os campos fixos Hora Inicial/Final; o usuário escolhe uma **Duração** (30min/1h/1h30/2h) e o backend calcula, para cada colaborador, `hora_inicial = saída da escala dele` e `hora_final = saída + duração` (`bulk_create` + `_add_minutes`, `BulkCreateIn.duracao_horas` gt=0/le=2). Colaborador sem saída cadastrada cai em "failed". A lista mostra "Sai HH:MM" por colaborador e os resultados exibem os horários calculados.
+- **Gerência** agora tem acesso à Solicitação em Massa (nav `nav-solicitacao-massa` + rota `/gerencia/massa`; `CREATOR_ROLES` já inclui gerencia).
+- Validado E2E (iteration_4.json, frontend 100%): Gerência vê e abre a Massa; coordenador cria em lote com horários distintos por colaborador (ex.: 14:10–16:10 e 22:10–00:10); sem loop de UI. Backend validado por curl.
