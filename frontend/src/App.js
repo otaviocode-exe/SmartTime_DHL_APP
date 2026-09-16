@@ -94,6 +94,7 @@ function App() {
                   <Route index element={<GerenciaDashboard />} />
                   <Route path="aprovacoes" element={<Aprovacoes />} />
                   <Route path="nova" element={<NovaSolicitacao />} />
+                  <Route path="massa" element={<SolicitacaoMassa />} />
                   <Route path="minhas" element={<MinhasSolicitacoes />} />
                   <Route path="historico" element={<GerenciaHistorico />} />
                   <Route path="usuarios" element={<Usuarios />} />

@@ -16,15 +16,6 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Send, UsersRound, Search, CheckCircle2, XCircle } from "lucide-react";
 
-function calcHoras(hi, hf) {
-  if (!hi || !hf) return 0;
-  const [h1, m1] = hi.split(":").map(Number);
-  const [h2, m2] = hf.split(":").map(Number);
-  let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
-  if (mins < 0) mins += 24 * 60;
-  return Math.round((mins / 60) * 100) / 100;
-}
-
 function TickBox({ on }) {
   return (
     <span
@@ -54,8 +45,7 @@ export default function SolicitacaoMassa() {
 
   const [shared, setShared] = useState({
     data: new Date().toISOString().slice(0, 10),
-    hora_inicial: "17:00",
-    hora_final: "19:00",
+    duracao_horas: 2,
     motivo: "",
     observacoes: "",
   });
@@ -78,11 +68,7 @@ export default function SolicitacaoMassa() {
     [colabs, q]
   );
 
-  const totalHoras = useMemo(
-    () => calcHoras(shared.hora_inicial, shared.hora_final),
-    [shared.hora_inicial, shared.hora_final]
-  );
-  const exceedsLimit = totalHoras > 2;
+  const totalHoras = shared.duracao_horas;
 
   const toggle = (mat) => {
     setSelected((prev) => {
@@ -102,8 +88,7 @@ export default function SolicitacaoMassa() {
   const submit = async (e) => {
     e.preventDefault();
     if (selected.size === 0) { toast.error("Selecione pelo menos um colaborador."); return; }
-    if (totalHoras <= 0) { toast.error("Hora final deve ser posterior à hora inicial."); return; }
-    if (exceedsLimit) { toast.error("Limite de 2 horas por solicitação."); return; }
+    if (!shared.motivo || shared.motivo.trim().length < 3) { toast.error("Descreva o motivo da hora extra."); return; }
     setBusy(true);
     setResults(null);
     try {
@@ -112,8 +97,10 @@ export default function SolicitacaoMassa() {
         colaboradores: chosen.map((c) => ({
           colaborador: c.nome, matricula: c.matricula, setor: c.setor, turno: c.turno,
         })),
-        ...shared,
-        total_horas: totalHoras,
+        data: shared.data,
+        duracao_horas: shared.duracao_horas,
+        motivo: shared.motivo,
+        observacoes: shared.observacoes,
       });
       setResults(data);
       const ok = data.created.length, fail = data.failed.length;
@@ -143,7 +130,8 @@ export default function SolicitacaoMassa() {
           Horas Extras para Vários Colaboradores
         </h1>
         <p className="text-slate-500 mt-1">
-          Filtre por setor/turno da área {user?.area !== "ALL" ? user?.area : ""}, selecione os colaboradores e envie uma única solicitação para todos.
+          Filtre por setor/turno da área {user?.area !== "ALL" ? user?.area : ""}, selecione os colaboradores e envie de uma vez.
+          A hora extra de cada colaborador <b>começa no horário de saída da escala dele</b> (após bater o ponto) e dura o tempo escolhido (máx. 2h).
         </p>
       </div>
 
@@ -216,6 +204,7 @@ export default function SolicitacaoMassa() {
                     <div className="text-sm font-semibold text-slate-900 truncate">{c.nome}</div>
                     <div className="text-[10px] text-slate-500">
                       {c.matricula} · {setorLabel(c.setor).replace("UNILEVER VINHEDO - ", "")} · Turno {c.turno}
+                      {c.turma_hora_final ? <> · Sai <b>{c.turma_hora_final}</b></> : <> · <span className="text-[#B91C1C]">sem escala</span></>}
                     </div>
                   </div>
                 </li>
@@ -232,23 +221,30 @@ export default function SolicitacaoMassa() {
               <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Data *</Label>
               <Input required type="date" className="mt-1.5" value={shared.data} onChange={set("data")} data-testid="massa-data" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Hora Inicial *</Label>
-                <Input required type="time" className="mt-1.5" value={shared.hora_inicial} onChange={set("hora_inicial")} data-testid="massa-hora-inicial" />
-              </div>
-              <div>
-                <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Hora Final *</Label>
-                <Input required type="time" className="mt-1.5" value={shared.hora_final} onChange={set("hora_final")} data-testid="massa-hora-final" />
-              </div>
+            <div>
+              <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Duração da HE (após a saída) *</Label>
+              <Select
+                value={String(shared.duracao_horas)}
+                onValueChange={(v) => setShared({ ...shared, duracao_horas: parseFloat(v) })}
+              >
+                <SelectTrigger className="mt-1.5" data-testid="massa-duracao">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.5">30 minutos</SelectItem>
+                  <SelectItem value="1">1 hora</SelectItem>
+                  <SelectItem value="1.5">1h30</SelectItem>
+                  <SelectItem value="2">2 horas (máximo)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div
               data-testid="massa-total-horas"
-              className={`h-10 px-4 flex items-center rounded-md border font-semibold text-sm ${
-                exceedsLimit ? "border-[#D40511] bg-[#FEE2E2] text-[#B91C1C]" : "border-slate-300 bg-[#FFCC00]/20 text-slate-900"
-              }`}
+              className="px-4 py-2 rounded-md border border-slate-300 bg-[#FFCC00]/20 text-slate-900 font-semibold text-sm leading-relaxed"
             >
-              Total por colaborador: {totalHoras.toFixed(2)}h {exceedsLimit && "· máx. 2h!"}
+              Cada colaborador receberá <b>{totalHoras.toFixed(1).replace(".0", "")}h</b> de HE iniciando no
+              horário de <b>saída da escala dele</b>. Ex.: sai 16:50 → HE {""}
+              16:50–{(() => { const t = (16 * 60 + 50 + Math.round(totalHoras * 60)) % 1440; return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; })()}.
             </div>
             <div>
               <Label className="uppercase tracking-[0.1em] text-xs font-bold text-slate-500">Motivo *</Label>
@@ -260,7 +256,7 @@ export default function SolicitacaoMassa() {
             </div>
             <Button
               type="submit"
-              disabled={busy || selected.size === 0 || exceedsLimit}
+              disabled={busy || selected.size === 0}
               className="w-full btn-primary rounded-md font-semibold disabled:opacity-40"
               data-testid="massa-submit-btn"
             >
@@ -273,6 +269,7 @@ export default function SolicitacaoMassa() {
                 {results.created.map((r) => (
                   <div key={r.numero} className="flex items-center gap-2 text-xs text-[#15803D]">
                     <CheckCircle2 size={13} /> {r.colaborador} — {r.numero}
+                    {r.hora_inicial && <span className="text-slate-500">({r.hora_inicial}–{r.hora_final})</span>}
                   </div>
                 ))}
                 {results.failed.map((r, i) => (

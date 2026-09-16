@@ -366,6 +366,11 @@ async def _notify_role(role: str, area: str, type_: str, title: str, message: st
     for u in users:
         await _notify(u["id"], type_, title, message, request_id)
 
+def _add_minutes(hhmm: str, mins: int) -> str:
+    h, m = [int(x) for x in hhmm.split(":")]
+    t = (h * 60 + m + mins) % (24 * 60)
+    return f"{t // 60:02d}:{t % 60:02d}"
+
 async def _validate_and_build_request(body_dict: dict, user: dict) -> dict:
     matricula = str(body_dict["matricula"])
     if body_dict["total_horas"] > 2:
@@ -449,27 +454,39 @@ class BulkColabIn(BaseModel):
 class BulkCreateIn(BaseModel):
     colaboradores: List[BulkColabIn] = Field(min_length=1, max_length=100)
     data: str
-    hora_inicial: str
-    hora_final: str
-    total_horas: float = Field(gt=0, le=2)
+    duracao_horas: float = Field(gt=0, le=2, default=2)
     motivo: str = Field(min_length=3)
     observacoes: str = ""
 
 @api.post("/requests/bulk-create")
 async def bulk_create(body: BulkCreateIn, user: dict = Depends(require_role(*CREATOR_ROLES))):
     results = {"created": [], "failed": []}
+    dur_min = int(round(body.duracao_horas * 60))
     for c in body.colaboradores:
+        rec = colab_db.find_by_matricula(c.matricula)
+        saida = (rec or {}).get("turma_hora_final") or ""
+        if not saida:
+            results["failed"].append({
+                "matricula": c.matricula, "colaborador": c.colaborador,
+                "error": "Sem escala/horário de saída cadastrado — não é possível calcular a HE após a saída.",
+            })
+            continue
+        hi = saida
+        hf = _add_minutes(saida, dur_min)
         item = {
             "colaborador": c.colaborador, "matricula": c.matricula,
             "setor": c.setor, "turno": c.turno,
-            "data": body.data, "hora_inicial": body.hora_inicial, "hora_final": body.hora_final,
-            "total_horas": body.total_horas, "motivo": body.motivo, "observacoes": body.observacoes,
+            "data": body.data, "hora_inicial": hi, "hora_final": hf,
+            "total_horas": body.duracao_horas, "motivo": body.motivo, "observacoes": body.observacoes,
         }
         try:
             doc = await _validate_and_build_request(item, user)
             await db.requests.insert_one(doc)
             await _post_create(doc, user)
-            results["created"].append({"matricula": c.matricula, "colaborador": c.colaborador, "numero": doc["numero"]})
+            results["created"].append({
+                "matricula": c.matricula, "colaborador": c.colaborador,
+                "numero": doc["numero"], "hora_inicial": hi, "hora_final": hf,
+            })
         except HTTPException as e:
             results["failed"].append({"matricula": c.matricula, "colaborador": c.colaborador, "error": e.detail})
     return results
