@@ -51,7 +51,7 @@ export default function DeviceSelector() {
         <div className="w-full max-w-5xl">
           <div className="dhl-logo mb-8 justify-center flex">
             <span className="dhl-logo-mark">DHL</span>
-            <span className="text-slate-900 font-bold">SmartTime</span>
+            <span className="text-slate-900 font-bold">SmartTime HUB</span>
           </div>
 
           <div className="text-center mb-10">

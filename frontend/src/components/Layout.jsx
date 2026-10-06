@@ -68,20 +68,20 @@ export default function Layout() {
 
   const changeDevice = () => { resetDeviceMode(); navigate("/device-select"); };
 
-  // Only "notebook" uses the always-visible desktop sidebar.
-  // "celular" and "tablet" both use the drawer, but with different container widths (CSS).
+  // Apenas "notebook" usa o menu lateral fixo.
+  // "celular" e "tablet" usam a gaveta, com larguras diferentes (CSS).
   const isCelular = deviceMode === "celular";
   const isTablet = deviceMode === "tablet";
   const isNotebook = deviceMode === "notebook" || !deviceMode;
 
-  const compact = isCelular; // icon-only style for narrow
+  const compact = isCelular; // somente ícones em telas estreitas
 
   const Sidebar = (
     <aside
       data-testid="sidebar"
       className="w-48 bg-white text-slate-800 flex flex-col rounded-2xl border border-slate-100 shadow-[0_10px_34px_rgba(15,23,42,0.10)] h-full overflow-hidden"
     >
-      {/* DHL brand box */}
+      {/* Marca DHL */}
       <div className="relative px-3 pt-3">
         <div className="rounded-xl bg-[#FFCC00] py-3.5 flex items-center justify-center">
           <DhlLogo height={22} />
@@ -150,7 +150,7 @@ export default function Layout() {
     </aside>
   );
 
-  // BOTTOM TAB BAR (only for CELULAR mode - iOS/Android style)
+  // BARRA DE ABAS INFERIOR (somente celular - estilo iOS/Android)
   const BottomTabs = isCelular && (
     <nav
       data-testid="bottom-tabs"
@@ -180,17 +180,17 @@ export default function Layout() {
 
   return (
     <div className={`app-shell flex bg-[#F8FAFC] min-h-screen ${isCelular ? "pb-16" : ""}`}>
-      {/* Desktop sidebar: only for notebook */}
+      {/* Menu lateral (notebook) */}
       {isNotebook && (
         <div className="hidden md:block sticky top-0 h-screen p-3">{Sidebar}</div>
       )}
 
-      {/* Tablet: always-open narrow-ish sidebar */}
+      {/* Tablet: menu lateral fixo */}
       {isTablet && (
         <div className="hidden md:block sticky top-0 h-screen p-3">{Sidebar}</div>
       )}
 
-      {/* Drawer (used for tablet mode below md breakpoint and notebook mode on smaller screens — NOT for celular) */}
+      {/* Gaveta lateral (tablet e notebook em telas menores — não no celular) */}
       {mobileOpen && !isCelular && (
         <div className={`fixed inset-0 z-50 ${isNotebook ? "md:hidden" : ""}`} data-testid="mobile-drawer">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
@@ -201,7 +201,7 @@ export default function Layout() {
       <main className="flex-1 overflow-x-hidden min-w-0">
         <div className="h-1.5 bg-[#FFCC00]" />
 
-        {/* Top bar: for celular (logo only, no hamburger) AND on small screens for notebook */}
+        {/* Barra superior (celular e telas menores no notebook) */}
         {isCelular ? (
           <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
             <SmartTimeLogo size={32} wordmarkClass="text-sm text-[#333333]" />
@@ -234,7 +234,7 @@ export default function Layout() {
           </div>
         ) : null}
 
-        {/* Desktop notification bell (top-right floating) */}
+        {/* Sino de notificações (desktop) */}
         {isNotebook && (
           <div className="hidden md:flex absolute top-3 right-6 z-20 items-center gap-2">
             <ThemeToggle />

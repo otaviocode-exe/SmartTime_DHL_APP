@@ -41,7 +41,7 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-app = FastAPI(title="DHL SmartTime API")
+app = FastAPI(title="SmartTime HUB API")
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -267,7 +267,7 @@ async def forgot_password(body: ForgotPasswordIn, request: Request):
     reset_link = f"{base}/reset-password?token={token}"
     sent = await send_email(
         email,
-        "SmartTime — Redefinição de senha",
+        "SmartTime HUB — Redefinição de senha",
         password_reset_html(reset_link, user.get("name", "")),
     )
     resp = dict(generic)
@@ -332,7 +332,6 @@ async def delete_user(user_id: str, current: dict = Depends(require_role("gerenc
 # ---------------- Overtime Requests ----------------
 def _serialize_request(doc: dict) -> dict:
     doc.pop("_id", None)
-    doc.pop("categoria_ia", None)  # recurso de IA removido — não vazar campo legado
     return doc
 
 def _area_of(setor: str, fallback: str = "I2M") -> str:
@@ -497,7 +496,7 @@ async def block_status(matricula: str, _u: dict = Depends(get_current_user)):
 
 @api.get("/requests/mine")
 async def my_requests(user: dict = Depends(require_role(*CREATOR_ROLES))):
-    docs = await db.requests.find({"gestor_id": user["id"]}, {"_id": 0, "categoria_ia": 0}).sort("created_at", -1).to_list(1000)
+    docs = await db.requests.find({"gestor_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return docs
 
 @api.get("/requests")
@@ -517,7 +516,7 @@ async def all_requests(status: Optional[str] = None,
         q["area"] = user["area"]
     elif area and area != "all":
         q["area"] = area
-    docs = await db.requests.find(q, {"_id": 0, "categoria_ia": 0}).sort("created_at", -1).to_list(2000)
+    docs = await db.requests.find(q, {"_id": 0}).sort("created_at", -1).to_list(2000)
     return docs
 
 @api.get("/requests/stats")
@@ -965,7 +964,7 @@ async def request_pdf(req_id: str, user: dict = Depends(get_current_user)):
                            textColor=rl_colors.HexColor("#64748B"))
     story = []
 
-    story.append(Paragraph("SmartTime — Comprovante de Hora Extra", title_style))
+    story.append(Paragraph("SmartTime HUB — Comprovante de Hora Extra", title_style))
     story.append(Paragraph("DHL Brasil · Sistema de Aprovação de Horas Extras", small))
     story.append(Spacer(1, 0.5*cm))
 
@@ -1046,7 +1045,7 @@ async def request_pdf(req_id: str, user: dict = Depends(get_current_user)):
 
     story.append(Spacer(1, 0.8*cm))
     story.append(Paragraph(
-        f"Documento gerado eletronicamente por SmartTime em "
+        f"Documento gerado eletronicamente por SmartTime HUB em "
         f"{datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M UTC')} · "
         f"Emitido por: {user.get('name','—')}", small))
 
@@ -1251,7 +1250,7 @@ async def colaboradores_reload(user: dict = Depends(require_role("gerencia", "ad
 # ---------------- Health ----------------
 @api.get("/")
 async def root():
-    return {"service": "DHL SmartTime", "status": "ok"}
+    return {"service": "SmartTime HUB", "status": "ok"}
 
 # ---------------- Register router + CORS ----------------
 app.include_router(api)

@@ -47,7 +47,7 @@ def password_reset_html(link: str, name: str = "") -> str:
       <p style="margin:0 0 24px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#94A3B8;font-weight:bold;">Gestão de Horas Extras</p>
       <p style="font-size:15px;color:#334155;margin:0 0 12px;">{hi}</p>
       <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 24px;">
-        Recebemos uma solicitação para redefinir a senha da sua conta SmartTime.
+        Recebemos uma solicitação para redefinir a senha da sua conta SmartTime HUB.
         Clique no botão abaixo para criar uma nova senha. Este link expira em 1 hora.
       </p>
       <a href="{link}" style="display:inline-block;background:#D40511;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 28px;border-radius:8px;">
@@ -57,7 +57,7 @@ def password_reset_html(link: str, name: str = "") -> str:
         Se você não solicitou esta alteração, ignore este e-mail — sua senha permanecerá a mesma.
       </p>
       <hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0;" />
-      <p style="font-size:12px;color:#94A3B8;margin:0;">SmartTime · Uso interno · Suporte: TI Operações</p>
+      <p style="font-size:12px;color:#94A3B8;margin:0;">SmartTime HUB · Uso interno · Suporte: TI Operações</p>
     </div>
   </div>
 </div>"""

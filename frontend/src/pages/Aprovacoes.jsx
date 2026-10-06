@@ -24,7 +24,7 @@ export default function Aprovacoes() {
   const [busy, setBusy] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkAction, setBulkAction] = useState(null); // 'approve' | 'reject'
+  const [bulkAction, setBulkAction] = useState(null); // 'approve' = aprovar | 'reject' = rejeitar
   const [bulkObs, setBulkObs] = useState("");
 
   const load = () =>
@@ -278,7 +278,7 @@ export default function Aprovacoes() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk decision dialog */}
+      {/* Diálogo de decisão em massa */}
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent data-testid="bulk-dialog">
           <DialogHeader>

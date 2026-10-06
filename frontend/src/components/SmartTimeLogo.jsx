@@ -43,7 +43,7 @@ export default function SmartTimeLogo({ size = 40, className = "", wordmarkClass
       </div>
       <div className="min-w-0">
         <div className={`font-heading font-extrabold tracking-[-0.02em] leading-none ${wordmarkClass || "text-lg text-[#333333]"}`}>
-          Smart<span className="text-[#D40511]">Time!</span>
+          Smart<span className="text-[#D40511]">Time</span> HUB
         </div>
         {subtitle && (
           <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-slate-400 mt-1 truncate">

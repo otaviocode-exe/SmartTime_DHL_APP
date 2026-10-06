@@ -48,18 +48,18 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white">
-      {/* ---------- Left: SmartTime hero image ---------- */}
+      {/* ---------- Esquerda: imagem de destaque ---------- */}
       <div className="relative hidden lg:block lg:w-1/2 bg-[#FFCC00]">
         <img
           src="/login-hero.png"
-          alt="SmartTime — Gestão de Horas Extras DHL"
+          alt="SmartTime HUB — Gestão de Horas Extras DHL"
           className="absolute inset-0 h-full w-full object-cover object-top"
         />
       </div>
 
-      {/* ---------- Right: auth panel ---------- */}
+      {/* ---------- Direita: painel de acesso ---------- */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Top bar */}
+        {/* Barra superior */}
         <div className="flex items-center justify-between px-6 pt-6 lg:justify-end">
           <div className="lg:hidden">
             <span className="inline-flex items-center rounded-lg bg-[#FFCC00] px-3 py-1.5">
@@ -81,14 +81,14 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Form */}
+        {/* Formulário */}
         <div className="flex-1 flex items-center justify-center px-6 py-8 sm:px-10">
           <form onSubmit={submit} className="w-full max-w-md">
-            {/* Brand header */}
+            {/* Cabeçalho da marca */}
             <div className="flex flex-col items-center text-center">
               <SmartTimeIcon size={88} filled />
               <div className="mt-5 font-heading text-4xl font-extrabold tracking-tight text-[#333333]">
-                Smart<span className="text-[#D40511]">Time!</span>
+                Smart<span className="text-[#D40511]">Time</span> HUB
               </div>
               <div className="mt-2.5 flex items-center gap-3">
                 <span className="h-px w-8 bg-[#D40511]/40" />
@@ -100,7 +100,7 @@ export default function Login() {
             </div>
 
             <div className="mt-9 space-y-5">
-              {/* Area selector — minimalist segmented control */}
+              {/* Seletor de área */}
               <div>
                 <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Área de operação <span className="text-[#D40511]">*</span>
@@ -130,7 +130,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Email */}
+              {/* E-mail */}
               <div>
                 <Label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   E-mail Corporativo
@@ -151,7 +151,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Password */}
+              {/* Senha */}
               <div>
                 <Label htmlFor="password" className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Senha
@@ -237,7 +237,7 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Footer */}
+        {/* Rodapé */}
         <div className="flex items-center justify-center gap-2 px-6 pb-7 text-center">
           <ShieldCheck size={16} className="text-[#D40511]" />
           <span className="text-xs text-slate-400 leading-tight">

@@ -1,4 +1,4 @@
-/* SmartTime — Service Worker (network-first, offline fallback) */
+/* SmartTime HUB — Service Worker (network-first, offline fallback) */
 const CACHE_VERSION = "dhl-he-v2";
 const OFFLINE_SHELL = ["/", "/index.html", "/manifest.json", "/favicon.ico",
   "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
@@ -43,7 +43,7 @@ self.addEventListener("fetch", (event) => {
 
 // -------- Web Push handlers --------
 self.addEventListener("push", (event) => {
-  let data = { title: "SmartTime", body: "Você tem uma nova notificação", url: "/" };
+  let data = { title: "SmartTime HUB", body: "Você tem uma nova notificação", url: "/" };
   try { if (event.data) data = { ...data, ...event.data.json() }; } catch (_) {}
   event.waitUntil(
     self.registration.showNotification(data.title, {
